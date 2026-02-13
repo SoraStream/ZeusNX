@@ -1,0 +1,93 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ZeusNX.MainWindow"
+        Title="ZeusNX"
+        Width="1200" Height="700"
+		CanResize="False"
+        WindowStartupLocation="CenterScreen">
+
+	<Grid RowDefinitions="Auto, *, Auto" Margin="10">
+
+		<Grid Grid.Row="0" ColumnDefinitions="250, 30, 350, 30, *" Margin="0,0,0,10">
+
+			<StackPanel Grid.Column="0" Spacing="5">
+				<DockPanel>
+					<TextBlock Text="Icon (JPG):" VerticalAlignment="Center"/>
+					<Button Content="Select another icon..." HorizontalAlignment="Right" FontSize="12" Click="OnSelectIconClicked"/>
+				</DockPanel>
+				<Border BorderBrush="Gray" BorderThickness="1" Height="256" Width="256" HorizontalAlignment="Left">
+					<Image Name="gameico" Source="avares://ZeusNX/Assets/ico_default.jpg" Stretch="UniformToFill"/>
+				</Border>
+			</StackPanel>
+			
+			<Separator Grid.Column="2" Width="1" VerticalAlignment="Stretch"
+						   Background="#D0D0D0" Margin="10,0"/>
+			
+			<StackPanel Grid.Column="2" Spacing="10" Margin="10,0">
+				<TextBlock Text="Runtime version:"/>
+				<Grid ColumnDefinitions="*, Auto">
+					<ComboBox Name="runtimesel" HorizontalAlignment="Stretch" SelectedIndex="0"/>
+					<Button Grid.Column="1"
+							Content="Refresh"
+							Click="OnRefreshRuntimesClicked"
+							Margin="5,0,0,0"/>
+				</Grid>
+
+				<TextBlock Text="Advanced options:" FontWeight="Bold" Margin="0,5,0,0"/>
+				<CheckBox Content="Require account on startup?"/>
+				
+				<TextBlock Text="Supported Languages:" Margin="0,5,0,0"/>
+				<CheckBox Content="AmericanEnglish" IsChecked="True"/>
+			</StackPanel>
+			
+			<Separator Grid.Column="2" Width="1" VerticalAlignment="Stretch"
+						   Background="#D0D0D0" Margin="10,0"/>
+			
+			<StackPanel Grid.Column="4" Spacing="5">
+				<TextBlock Text="Project:"/>
+				<Grid ColumnDefinitions="*, 40">
+					<TextBox Name="projpath" Watermark="C:\path\to\proj.yyp"/>
+					<Button Grid.Column="1" Content="..." HorizontalAlignment="Right" Click="OnBrowseProjectClicked"/>
+				</Grid>
+
+				<TextBlock Text="Title ID:"/>
+				<TextBox Name="titleid" MaxLength="16" TextChanged="OnTitleIdInput" Watermark="0000000000000000"/>
+
+				<TextBlock Text="Name:"/>
+				<TextBox Name="titlename" MaxLength="127" Watermark="GameMaker Runner"/>
+
+				<TextBlock Text="Author:"/>
+				<TextBox Name="titleauthor" MaxLength="63" Watermark="SoraStream"/>
+
+				<TextBlock Text="Version:"/>
+				<TextBox Name="titleversion" MaxLength="15" Watermark="0.0.0"/>
+
+				<TextBlock Text="Configuration name:"/>
+				<TextBox Name="projconf" Watermark="Default"/>
+
+				<TextBlock Text="Keys file:"/>
+				<Grid ColumnDefinitions="*, 40">
+					<TextBox Name="keypath" Watermark="C:\path\to\prod.keys"/>
+					<Button Grid.Column="1" Content="..." HorizontalAlignment="Right" Click="OnBrowseKeysClicked"/>
+				</Grid>
+			</StackPanel>
+		</Grid>
+
+		<StackPanel Grid.Row="1">
+			<TextBlock Text="Log:"/>
+			<TextBox Name="logbox" Height="200"
+					 AcceptsReturn="True"
+					 IsReadOnly="True"
+					 FontFamily="Cascadia Code"
+					 Background="#0C0C0C"
+					 Foreground="#00FF00"/>
+		</StackPanel>
+
+		<Grid Grid.Row="2" ColumnDefinitions="Auto, Auto, *, Auto" Margin="0,10,0,0">
+			<Button Grid.Column="0" Content="Export log" Margin="0,0,5,0"/>
+			<Button Grid.Column="1" Content="Clean log" Click="OnCleanClicked"/>
+			<Button Name="buildnsp" Grid.Column="3" Content="Build NSP" Padding="20,5" FontWeight="Bold" Click="BuildNSP"/>
+		</Grid>
+
+	</Grid>
+</Window>

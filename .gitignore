@@ -399,3 +399,5 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/ZeusNX/Runners/runtime-2024.14.3.260
+/ZeusNX/Tools
