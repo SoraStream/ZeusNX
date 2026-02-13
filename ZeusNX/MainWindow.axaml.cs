@@ -27,6 +27,39 @@ namespace ZeusNX
             trace("INFO", "Welcome to ZeusNX, Version 0.0.0");
         }
 
+        //thank you https://learn.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
+        static void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
+        {
+            // Get information about the source directory
+            var dir = new DirectoryInfo(sourceDir);
+
+            // Check if the source directory exists
+            if (!dir.Exists)
+                throw new DirectoryNotFoundException($"Source directory not found: {dir.FullName}");
+
+            // Cache directories before we start copying
+            DirectoryInfo[] dirs = dir.GetDirectories();
+
+            // Create the destination directory
+            Directory.CreateDirectory(destinationDir);
+
+            // Get the files in the source directory and copy to the destination directory
+            foreach (FileInfo file in dir.GetFiles())
+            {
+                string targetFilePath = Path.Combine(destinationDir, file.Name);
+                file.CopyTo(targetFilePath);
+            }
+
+            // If recursive and copying subdirectories, recursively call this method
+            if (recursive)
+            {
+                foreach (DirectoryInfo subDir in dirs)
+                {
+                    string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
+                    CopyDirectory(subDir.FullName, newDestinationDir, true);
+                }
+            }
+        }
         public void trace(string type, string message)
         {
             logbox.Text += $"[{type}]: {message}\n";
@@ -297,6 +330,16 @@ namespace ZeusNX
                 Directory.CreateDirectory($"{titleName}_build\\nsp\\control");
                 Directory.CreateDirectory($"{titleName}_build\\nsp\\logo");
             }
+            else
+            {
+                trace("ERROR", $"{titleName}_build has data inside!!");
+                return;
+            }
+                //copy runtime files to exefs / control
+                trace("INFO", "Copying runtime files...");
+            CopyDirectory($"Runners\\{selectedRuntime}\\exefs", $"{titleName}_build\\nsp\\exefs", true);
+            CopyDirectory($"Runners\\{selectedRuntime}\\logo", $"{titleName}_build\\nsp\\logo", true);
+            CopyDirectory($"Runners\\{selectedRuntime}\\romfs", $"{titleName}_build\\nsp\\romfs", true);
 
             trace("INFO", "Preprocessing GMS2 project...");
             string AssetCompilerARG = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{titleName}\" /td=\"{titleName}_build\\tmp\" /cd=\"{titleName}_build\\cache\" /rtp=\"{runtimePath}\" /ffe=\"eXpvfGtxgjeDg202c3h+b3Z2c31veH1vNnh/dnZzfXI2dnlxc3hpfX15Nn5vfX4=\" /m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /sh=True /nodnd /cfg=\"{projConfig}\" /o=\"{titleName}_build\\nsp\\romfs\" /optionsini=\"C:\\Users\\amyme\\Documents\\RussellNX\\runners\\build2024.14.3.260\\romfs\\options.ini\" /baseproject=\"\" \"{projPath}\" /v /preprocess=\"{titleName}_build\\cache\"";
@@ -378,8 +421,10 @@ namespace ZeusNX
             File.Delete($"{runtimePath}{compilerPath}\\GMAssetCompiler.dll");
             File.Copy($"{runtimePath}{compilerPath}\\GMAssetCompiler.bak", $"{runtimePath}{compilerPath}\\GMAssetCompiler.dll");
             File.Delete($"{runtimePath}{compilerPath}\\GMAssetCompiler.bak");
-            Directory.Delete($"{titleName}_build\\tmp", true);
-            Directory.Delete($"{titleName}_build\\cache", true);
+            if (Directory.Exists($"{titleName}_build\\tmp"))
+                Directory.Delete($"{titleName}_build\\tmp", true);
+            if (Directory.Exists($"{titleName}_build\\cache"))
+                Directory.Delete($"{titleName}_build\\cache", true);
             //Directory.Delete($"{titleName}_build\\nsp", true);
             trace("INFO", "Build Complete!");
             buildnsp.IsEnabled = true;
