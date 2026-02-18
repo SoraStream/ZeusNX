@@ -344,7 +344,7 @@ namespace ZeusNX
             }
                 //copy runtime files to exefs / control
             trace("INFO", "Copying runtime files...");
-            CopyDirectory($"Runners\\{selectedRuntime}\\run", $"{buildDir}\\nsp\\exefs", true);
+            CopyDirectory($"Runners\\{selectedRuntime}\\bin", $"{buildDir}\\nsp\\exefs", true);
             CopyDirectory($"Runners\\shared\\logo", $"{buildDir}\\nsp\\logo", true);
             //CopyDirectory($"Runners\\{selectedRuntime}\\romfs", $"{buildDir}\\nsp\\romfs", true);
 
