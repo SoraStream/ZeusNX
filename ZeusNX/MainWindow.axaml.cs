@@ -12,6 +12,8 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using ZeusNX.Ini;
+using ZeusNX.YYOptions;
 
 namespace ZeusNX
 {
@@ -319,30 +321,38 @@ namespace ZeusNX
 
             //make temp directories and everything
             trace("INFO", "Creating build dir...");
-            if (!Directory.Exists($"{titleName}_build") || !Directory.EnumerateFileSystemEntries($"{titleName}_build").Any())
+            var time = DateTime.Now.ToString();
+            time = time.Replace(" ", "");
+            time = time.Replace(":", ".");
+            time = time.Replace("-", ".");
+            var buildDir = $"{titleName}_build{time}";
+            if (!Directory.Exists(buildDir) || !Directory.EnumerateFileSystemEntries(buildDir).Any())
             {
-                Directory.CreateDirectory($"{titleName}_build");
-                Directory.CreateDirectory($"{titleName}_build\\tmp");
-                Directory.CreateDirectory($"{titleName}_build\\cache");
-                Directory.CreateDirectory($"{titleName}_build\\nsp");
-                Directory.CreateDirectory($"{titleName}_build\\nsp\\exefs");
-                Directory.CreateDirectory($"{titleName}_build\\nsp\\romfs");
-                Directory.CreateDirectory($"{titleName}_build\\nsp\\control");
-                Directory.CreateDirectory($"{titleName}_build\\nsp\\logo");
+                Directory.CreateDirectory(buildDir);
+                Directory.CreateDirectory($"{buildDir}\\tmp");
+                Directory.CreateDirectory($"{buildDir}\\cache");
+                Directory.CreateDirectory($"{buildDir}\\nsp");
+                Directory.CreateDirectory($"{buildDir}\\nsp\\exefs");
+                Directory.CreateDirectory($"{buildDir}\\nsp\\romfs");
+                Directory.CreateDirectory($"{buildDir}\\nsp\\control");
+                Directory.CreateDirectory($"{buildDir}\\nsp\\logo");
             }
             else
             {
-                trace("ERROR", $"{titleName}_build has data inside!!");
+                trace("ERROR", $"{buildDir} has data inside!!");
                 return;
             }
                 //copy runtime files to exefs / control
-                trace("INFO", "Copying runtime files...");
-            CopyDirectory($"Runners\\{selectedRuntime}\\exefs", $"{titleName}_build\\nsp\\exefs", true);
-            CopyDirectory($"Runners\\{selectedRuntime}\\logo", $"{titleName}_build\\nsp\\logo", true);
-            CopyDirectory($"Runners\\{selectedRuntime}\\romfs", $"{titleName}_build\\nsp\\romfs", true);
+            trace("INFO", "Copying runtime files...");
+            CopyDirectory($"Runners\\{selectedRuntime}\\run", $"{buildDir}\\nsp\\exefs", true);
+            CopyDirectory($"Runners\\shared\\logo", $"{buildDir}\\nsp\\logo", true);
+            //CopyDirectory($"Runners\\{selectedRuntime}\\romfs", $"{buildDir}\\nsp\\romfs", true);
+
+            //generate options.ini out of the options.yy shit
+
 
             trace("INFO", "Preprocessing GMS2 project...");
-            string AssetCompilerARG = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{titleName}\" /td=\"{titleName}_build\\tmp\" /cd=\"{titleName}_build\\cache\" /rtp=\"{runtimePath}\" /ffe=\"eXpvfGtxgjeDg202c3h+b3Z2c31veH1vNnh/dnZzfXI2dnlxc3hpfX15Nn5vfX4=\" /m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /sh=True /nodnd /cfg=\"{projConfig}\" /o=\"{titleName}_build\\nsp\\romfs\" /optionsini=\"C:\\Users\\amyme\\Documents\\RussellNX\\runners\\build2024.14.3.260\\romfs\\options.ini\" /baseproject=\"\" \"{projPath}\" /v /preprocess=\"{titleName}_build\\cache\"";
+            string AssetCompilerARG = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{titleName}\" /td=\"{buildDir}\\tmp\" /cd=\"{buildDir}\\cache\" /rtp=\"{runtimePath}\" /ffe=\"eXpvfGtxgjeDg202c3h+b3Z2c31veH1vNnh/dnZzfXI2dnlxc3hpfX15Nn5vfX4=\" /m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /sh=True /nodnd /cfg=\"{projConfig}\" /o=\"{buildDir}\\nsp\\romfs\" /optionsini=\"C:\\Users\\amyme\\Documents\\RussellNX\\runners\\build2024.14.3.260\\romfs\\options.ini\" /baseproject=\"\" \"{projPath}\" /v /preprocess=\"{buildDir}\\cache\"";
 
             trace("INFO", $"GMAC ARGS: {AssetCompilerARG}");
             await Task.Run(() =>
@@ -380,7 +390,7 @@ namespace ZeusNX
                 }
             });
             trace("INFO", "Compiling GMS2 project...");
-            AssetCompilerARG = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{titleName}\" /td=\"{titleName}_build\\tmp\" /cd=\"{titleName}_build\\cache\" /rtp=\"{runtimePath}\" /ffe=\"eXpvfGtxgjeDg202c3h+b3Z2c31veH1vNnh/dnZzfXI2dnlxc3hpfX15Nn5vfX4=\" /m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /sh=True /nodnd /cfg=\"{projConfig}\" /o=\"{titleName}_build\\nsp\\romfs\" /optionsini=\"C:\\Users\\amyme\\Documents\\RussellNX\\runners\\build2024.14.3.260\\romfs\\options.ini\" /baseproject=\"\" \"{projPath}\" /v";
+            AssetCompilerARG = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{titleName}\" /td=\"{buildDir}\tmp\" /cd=\"{buildDir}\\cache\" /rtp=\"{runtimePath}\" /ffe=\"eXpvfGtxgjeDg202c3h+b3Z2c31veH1vNnh/dnZzfXI2dnlxc3hpfX15Nn5vfX4=\" /m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /sh=True /nodnd /cfg=\"{projConfig}\" /o=\"{buildDir}\\nsp\\romfs\" /optionsini=\"\" /baseproject=\"\" \"{projPath}\" /v";
             await Task.Run(() =>
             {
                 {
@@ -415,17 +425,29 @@ namespace ZeusNX
                     }
                 }
             });
+            
+            //now starts the fun part, copy over selected icon
+            if (gameico.Source != null)
+            {
+                trace("INFO", "Copying over icon...");
+                var bitmap = gameico.Source as Bitmap;
+                using (var stream = File.OpenWrite($"{buildDir}\\nsp\\control\\icon_AmericanEnglish.dat"))
+                {
+                    bitmap.Save(stream);
+                }
+            }
 
             //cleanup
             trace("INFO", "Restoring GMAssetCompiler.dll");
             File.Delete($"{runtimePath}{compilerPath}\\GMAssetCompiler.dll");
             File.Copy($"{runtimePath}{compilerPath}\\GMAssetCompiler.bak", $"{runtimePath}{compilerPath}\\GMAssetCompiler.dll");
             File.Delete($"{runtimePath}{compilerPath}\\GMAssetCompiler.bak");
-            if (Directory.Exists($"{titleName}_build\\tmp"))
-                Directory.Delete($"{titleName}_build\\tmp", true);
-            if (Directory.Exists($"{titleName}_build\\cache"))
-                Directory.Delete($"{titleName}_build\\cache", true);
-            //Directory.Delete($"{titleName}_build\\nsp", true);
+            if (Directory.Exists($"{buildDir}\\tmp"))
+                Directory.Delete($"{buildDir}\\tmp", true);
+            if (Directory.Exists($"{buildDir}\\cache"))
+                Directory.Delete($"{buildDir}\\cache", true);
+            //if (Directory.Exists($"{buildDir}\\nsp"))
+                //Directory.Delete($"{buildDir}\\nsp", true);
             trace("INFO", "Build Complete!");
             buildnsp.IsEnabled = true;
         }
