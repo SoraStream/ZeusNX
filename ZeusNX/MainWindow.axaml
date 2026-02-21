@@ -68,8 +68,8 @@
 				</Grid>
 
 				<TextBlock Text="Advanced options:" FontWeight="Bold" Margin="0,5,0,0"/>
-				<CheckBox Content="Enable Splash Screen?"/>
-				<CheckBox Content="Require account on startup?"/>
+				<CheckBox Name="splashCheck" Content="Enable Splash Screen?"/>
+				<CheckBox Name="preselecteduserCheck" Content="Require account on startup?"/>
 				
 				<TextBlock Text="Supported Languages:" Margin="0,5,0,0"/>
 				<CheckBox Content="AmericanEnglish" IsChecked="True"/>

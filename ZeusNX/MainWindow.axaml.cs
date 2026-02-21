@@ -118,7 +118,7 @@ namespace ZeusNX
             var topLevel = TopLevel.GetTopLevel(this);
             var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = "Select PNG (1920x1080)",
+                Title = "Select PNG",
                 FileTypeFilter = new List<FilePickerFileType>
                 {
                     new FilePickerFileType("PNG Image")
@@ -143,16 +143,8 @@ namespace ZeusNX
                     using (var stream = File.OpenRead(filePath))
                     {
                         var bitmap = new Bitmap(stream);
-                        if (bitmap.PixelSize.Width == 1920 && bitmap.PixelSize.Height == 1080)
-                        {
-                            gamesplash.Source = bitmap;
-                            trace("INFO", $"Splash loaded: {filePath}");
-                        }
-                        else
-                        {
-                            trace("ERROR", $"Image size is {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}. Must be 1920x1080!");
-                            bitmap.Dispose();
-                        }
+                        gamesplash.Source = bitmap;
+                        trace("INFO", $"Splash loaded: {filePath}");
                     }
                 }
                 catch (Exception ex)
@@ -351,6 +343,12 @@ namespace ZeusNX
 
             //patch GMAssetCompiler.dll to ignore licence checks
             trace("INFO", "Patching GMAssetCompiler.dll...");
+            if (File.Exists($"{runtimePath}{compilerPath}\\GMAssetCompiler.bak"))
+            {
+                File.Delete($"{runtimePath}{compilerPath}\\GMAssetCompiler.dll");
+                File.Copy($"{runtimePath}{compilerPath}\\GMAssetCompiler.bak", $"{runtimePath}{compilerPath}\\GMAssetCompiler.dll");
+                File.Delete($"{runtimePath}{compilerPath}\\GMAssetCompiler.bak");
+            }
             File.Copy($"{runtimePath}{compilerPath}\\GMAssetCompiler.dll", $"{runtimePath}{compilerPath}\\GMAssetCompiler.bak");
             File.Delete($"{runtimePath}{compilerPath}\\GMAssetCompiler.dll");
             await Task.Run(() =>
@@ -429,6 +427,13 @@ namespace ZeusNX
             optionsINI["LLVM-Switch"]["nMeta"] = "C:\\Users\\ZeusNX\\Project\\options\\switch\\application.nmeta";
             optionsINI.Save($"{buildDir}\\nsp\\romfs");
 
+            //make the preselecteduser file
+            File.Create($"{buildDir}\\nsp\\romfs\\preselecteduser");
+            if (preselecteduserCheck.IsChecked == true)
+                File.WriteAllText($"{buildDir}\\nsp\\romfs\\preselecteduser", "False");
+            else
+                File.WriteAllText($"{buildDir}\\nsp\\romfs\\preselecteduser", "True");
+
 
             trace("INFO", "Preprocessing GMS2 project...");
             string AssetCompilerARG = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{titleName}\" /td=\"{buildDir}\\tmp\" /cd=\"{buildDir}\\cache\" /rtp=\"{runtimePath}\" /ffe=\"eXpvfGtxgjeDg202c3h+b3Z2c31veH1vNnh/dnZzfXI2dnlxc3hpfX15Nn5vfX4=\" /m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /sh=True /nodnd /cfg=\"{projConfig}\" /o=\"{buildDir}\\nsp\\romfs\" /optionsini=\"C:\\Users\\amyme\\Documents\\RussellNX\\runners\\build2024.14.3.260\\romfs\\options.ini\" /baseproject=\"\" \"{projPath}\" /v /preprocess=\"{buildDir}\\cache\"";
@@ -506,11 +511,23 @@ namespace ZeusNX
             });
             
             //now starts the fun part, copy over selected icon
+            //TODO: add language support
             if (gameico.Source != null)
             {
                 trace("INFO", "Copying over icon...");
                 var bitmap = gameico.Source as Bitmap;
                 using (var stream = File.OpenWrite($"{buildDir}\\nsp\\control\\icon_AmericanEnglish.dat"))
+                {
+                    bitmap.Save(stream);
+                }
+            }
+
+            //copy over splash if toggle is set
+            if (splashCheck.IsChecked == true && gamesplash.Source != null)
+            {
+                trace("INFO", "Copying over splash...");
+                var bitmap = gamesplash.Source as Bitmap;
+                using (var stream = File.OpenWrite($"{buildDir}\\nsp\\romfs\\splash.png"))
                 {
                     bitmap.Save(stream);
                 }
