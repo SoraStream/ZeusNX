@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ZeusNX.Ini;
@@ -108,6 +109,55 @@ namespace ZeusNX
                     int selectionStart = textBox.CaretIndex;
                     textBox.Text = newText;
                     textBox.CaretIndex = selectionStart;
+                }
+            }
+        }
+
+        private async void OnSelectSplashClicked(object sender, RoutedEventArgs e)
+        {
+            var topLevel = TopLevel.GetTopLevel(this);
+            var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Select PNG (1920x1080)",
+                FileTypeFilter = new List<FilePickerFileType>
+                {
+                    new FilePickerFileType("PNG Image")
+                    {
+                        Patterns = new List<string> { "*.png" }
+                    }
+                },
+                AllowMultiple = false
+            });
+
+            if (files.Count > 0)
+            {
+                string filePath = files[0].Path.LocalPath;
+                if (!filePath.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+                {
+                    trace("ERROR", "File must be a PNG!");
+                    return;
+                }
+
+                try
+                {
+                    using (var stream = File.OpenRead(filePath))
+                    {
+                        var bitmap = new Bitmap(stream);
+                        if (bitmap.PixelSize.Width == 1920 && bitmap.PixelSize.Height == 1080)
+                        {
+                            gamesplash.Source = bitmap;
+                            trace("INFO", $"Splash loaded: {filePath}");
+                        }
+                        else
+                        {
+                            trace("ERROR", $"Image size is {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}. Must be 1920x1080!");
+                            bitmap.Dispose();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    trace("ERROR", $"Failed to load image: {ex.Message}");
                 }
             }
         }
@@ -276,6 +326,29 @@ namespace ZeusNX
                 return;
             }
 
+            //we should check project compatibility here since running lts on a 2024 runtime will make it crash the fuck out
+            //google "how to get version from yyp which is just an evil json"
+            string YYP = File.ReadAllText(projPath);
+            JsonDocument jYYP = JsonDocument.Parse(YYP, new JsonDocumentOptions { AllowTrailingCommas = true});
+            JsonElement root = jYYP.RootElement;
+            if (root.TryGetProperty("MetaData", out JsonElement nameElement))
+            {
+                if (nameElement.TryGetProperty("IDEVersion", out JsonElement IDEVer))
+                {
+                    string versionString = IDEVer.ToString();
+                    string temp = versionString.Split('.')[0];
+                    temp += "." + versionString.Split('.')[1];
+                    string temp2 = selectedRuntime.Split(".")[0];
+                    temp2 = "." + selectedRuntime.Split(".")[1];
+                    temp2.Replace("runtime-", "");
+                    if (temp != temp2)
+                    {
+                        trace("WARN", "Project versions don't match, there may be dragons!");
+                    }
+                }
+            }
+
+
             //patch GMAssetCompiler.dll to ignore licence checks
             trace("INFO", "Patching GMAssetCompiler.dll...");
             File.Copy($"{runtimePath}{compilerPath}\\GMAssetCompiler.dll", $"{runtimePath}{compilerPath}\\GMAssetCompiler.bak");
@@ -348,7 +421,13 @@ namespace ZeusNX
             CopyDirectory($"Runners\\shared\\logo", $"{buildDir}\\nsp\\logo", true);
             //CopyDirectory($"Runners\\{selectedRuntime}\\romfs", $"{buildDir}\\nsp\\romfs", true);
 
-            //generate options.ini out of the options.yy shit
+            //generate options.ini out of thin air
+            var optionsINI = new IniFile();
+            optionsINI["LLVM-Switch"]["SDKDir"] = "C:\\Nintendo\\NXSDK\\NintendoSDK";
+            optionsINI["LLVM-Switch"]["UseNEX"] = false;
+            optionsINI["LLVM-Switch"]["UseNPLN"] = false;
+            optionsINI["LLVM-Switch"]["nMeta"] = "C:\\Users\\ZeusNX\\Project\\options\\switch\\application.nmeta";
+            optionsINI.Save($"{buildDir}\\nsp\\romfs");
 
 
             trace("INFO", "Preprocessing GMS2 project...");

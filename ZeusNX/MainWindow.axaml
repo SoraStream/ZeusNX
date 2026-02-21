@@ -6,18 +6,52 @@
 		CanResize="False"
         WindowStartupLocation="CenterScreen">
 
+	<Window.Styles>
+		<Style Selector="Button.image-overlay">
+			<Setter Property="Opacity" Value="0"/>
+			<Setter Property="Background" Value="#AA000000"/>
+			<Setter Property="Foreground" Value="White"/>
+			<Setter Property="HorizontalAlignment" Value="Stretch"/>
+			<Setter Property="VerticalAlignment" Value="Stretch"/>
+			<Setter Property="HorizontalContentAlignment" Value="Center"/>
+			<Setter Property="VerticalContentAlignment" Value="Center"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Transitions">
+				<Transitions>
+					<DoubleTransition Property="Opacity" Duration="0:0:0.2"/>
+				</Transitions>
+			</Setter>
+		</Style>
+
+		<Style Selector="Button.image-overlay:pointerover">
+			<Setter Property="Opacity" Value="1"/>
+		</Style>
+
+		<Style Selector="Button.image-overlay:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="#AA000000"/>
+			<Setter Property="Foreground" Value="White"/>
+		</Style>
+	</Window.Styles>
+	
 	<Grid RowDefinitions="Auto, *, Auto" Margin="10">
 
 		<Grid Grid.Row="0" ColumnDefinitions="250, 30, 350, 30, *" Margin="0,0,0,10">
 
-			<StackPanel Grid.Column="0" Spacing="5">
-				<DockPanel>
-					<TextBlock Text="Icon (JPG):" VerticalAlignment="Center"/>
-					<Button Content="Select another icon..." HorizontalAlignment="Right" FontSize="12" Click="OnSelectIconClicked"/>
-				</DockPanel>
-				<Border BorderBrush="Gray" BorderThickness="1" Height="256" Width="256" HorizontalAlignment="Left">
-					<Image Name="gameico" Source="avares://ZeusNX/Assets/ico_default.jpg" Stretch="UniformToFill"/>
-				</Border>
+			<StackPanel Grid.Column="0" Spacing="8">
+				<TextBlock Text="Switch Icon:" FontWeight="SemiBold"/>
+				<Grid Width="256" Height="256">
+					<Border BorderBrush="#444" BorderThickness="1" CornerRadius="4" ClipToBounds="True">
+						<Image Name="gameico" Source="avares://ZeusNX/Assets/ico_default.jpg" Stretch="UniformToFill"/>
+					</Border>
+					<Button Classes="image-overlay" Content="Change Icon..." Click="OnSelectIconClicked"/>
+				</Grid>
+				<TextBlock Text="Splash:" FontWeight="SemiBold"/>
+				<Grid Width="256" Height="144">
+					<Border BorderBrush="#444" BorderThickness="1" CornerRadius="4" ClipToBounds="True">
+						<Image Name="gamesplash" Source="avares://ZeusNX/Assets/splash_default.png" Stretch="UniformToFill"/>
+					</Border>
+					<Button Classes="image-overlay" Content="Change Splash..." Click="OnSelectSplashClicked"/>
+				</Grid>
 			</StackPanel>
 			
 			<Separator Grid.Column="2" Width="1" VerticalAlignment="Stretch"
@@ -34,6 +68,7 @@
 				</Grid>
 
 				<TextBlock Text="Advanced options:" FontWeight="Bold" Margin="0,5,0,0"/>
+				<CheckBox Content="Enable Splash Screen?"/>
 				<CheckBox Content="Require account on startup?"/>
 				
 				<TextBlock Text="Supported Languages:" Margin="0,5,0,0"/>
@@ -73,12 +108,14 @@
 			</StackPanel>
 		</Grid>
 
-		<StackPanel Grid.Row="1">
+		<StackPanel Grid.Row="1" Margin="0,10,0,0">
 			<TextBlock Text="Log:"/>
-			<TextBox Name="logbox" Height="200"
+			<TextBox Name="logbox"
+					 Height="150"
 					 AcceptsReturn="True"
 					 IsReadOnly="True"
 					 FontFamily="Cascadia Code"
+					 FontSize="13"
 					 Background="#0C0C0C"
 					 Foreground="#00FF00"/>
 		</StackPanel>
