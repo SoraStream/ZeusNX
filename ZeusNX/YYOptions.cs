@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 
 namespace ZeusNX.YYOptions
 {
-    internal class YYOptionsLTS
+    internal class YYOptionsLTS //anything pre 2024 it seems
     {
         public string resourceType { get; } = "GMSwitchOptions";
         public string resourceVersion { get; } = "1.0";
@@ -25,7 +25,7 @@ namespace ZeusNX.YYOptions
 
     }
 
-    internal class YYOptions2024
+    internal class YYOptions2024 //everything past 2023.11, genuinely 2024.2 dropped and ts changed
     {
         [JsonProperty("$GMSwitchOptions")]
         public string GMSwitchOptions { get; } = "";

@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
+using Newtonsoft.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ZeusNX.Ini;
@@ -435,66 +436,31 @@ namespace ZeusNX
             else
                 File.WriteAllText($"{buildDir}\\nsp\\romfs\\preselected_user", "True");
 
+            //options_switch.yy creation can you believe this shit actually works
+            if (!Directory.Exists($"{projDir}\\options\\switch"))
+                Directory.CreateDirectory($"{projDir}\\options\\switch");
 
-            //refactor all of this later this hurts my head
-            if (Directory.Exists($"{projDir}\\options\\switch"))
+            if (File.Exists($"{projDir}\\options\\switch\\options_switch.yy") && existingoptionsCheck.IsChecked == true)
+                trace("INFO", "Using existing options_switch.yy...");
+            else
             {
-                if (File.Exists($"{projDir}\\options\\switch\\options_switch.yy") && existingoptionsCheck.IsChecked == true)
-                    trace("INFO", "Using existing options_switch.yy...");
-                else if (File.Exists($"{projDir}\\options\\switch\\options_switch.yy"))
+                if (File.Exists($"{projDir}\\options\\switch\\options_switch.yy"))
                 {
                     trace("WARN", "Existing options_switch.yy found, backing up incase of user error...");
                     File.Copy($"{projDir}\\options\\switch\\options_switch.yy", $"{projDir}\\options\\switch\\options_switch.bak", true);
-                    trace("INFO", "Creating options_switch.yy...");
-                    //ok so funny thing is all fields we can modify are actually universal for both 2024 and whatever came before, iPhones are AWESOME!
-                    if (selectedRuntime.Contains("2024"))
-                    {
-                        //default for now, we're gonna add some stuff later for it
-                        YYOptions2024 options = new YYOptions2024
-                        {
-                            option_switch_allow_debug_output = false,
-                            option_switch_check_nsp_publish_errors = false,
-                            option_switch_enable_fileaccess_checking = false,
-                            option_switch_interpolate_pixels = true,
-                            option_switch_project_nmeta = $"{projDir}\\options\\switch\\application.nmeta", //default path, honestly this is supposed to NOT be used since NintendoSDK is kinda GULP behind locked doors. we're using other stuff for nsp metadata anyways.
-                            option_switch_scale = 0, //0 is keep aspect ration, 1 is full scale.
-                            option_switch_splash_screen = $"{projDir}\\options\\switch\\splash.png", //if one is used i guess, but that kinda ignores our own toggle. think about it melia.
-                            option_switch_texture_page = "2048x2048", //there's only 7 options i'll deal with that in the project settings tab
-                            option_switch_use_splash = splashCheck.IsChecked == true ? true : false //i s'pose
-                        };
-                        File.WriteAllText($"{projDir}\\options\\switch\\options_switch.yy", JsonSerializer.Serialize(options));
-                    }
-                    else
-                    {
-                        YYOptionsLTS options = new YYOptionsLTS
-                        {
-                            option_switch_allow_debug_output = false,
-                            option_switch_enable_fileaccess_checking = false,
-                            option_switch_interpolate_pixels = true,
-                            option_switch_project_nmeta = $"{projDir}\\options\\switch\\application.nmeta", //default path, honestly this is supposed to NOT be used since NintendoSDK is kinda GULP behind locked doors. we're using other stuff for nsp metadata anyways.
-                            option_switch_scale = 0, //0 is keep aspect ration, 1 is full scale.
-                            option_switch_splash_screen = $"{projDir}\\options\\switch\\splash.png", //if one is used i guess, but that kinda ignores our own toggle. think about it melia.
-                            option_switch_texture_page = "2048x2048", //there's only 7 options i'll deal with that in the project settings tab
-                            option_switch_use_splash = splashCheck.IsChecked == true ? true : false //i s'pose
-                        };
-                        File.WriteAllText($"{projDir}\\options\\switch\\options_switch.yy", JsonSerializer.Serialize(options));
-                    }
                 }
-            }
-            else
-            {
-                if (existingoptionsCheck.IsChecked == true)
-                    trace("WARN", "There's no options_switch.yy dingus. making one...");
-                else
-                    trace("INFO", "Creating options_switch.yy...");
-                Directory.CreateDirectory($"{projDir}\\options\\switch");
-                //god ok this is IMPORTANT. make options_switch.yy DEPENDING on the runtime. or else GMAC will freak out i am not joking
+                else if (existingoptionsCheck.IsChecked == true)
+                    trace("WARN", "Existing options checked, but there's no options_switch.yy dingus.");
+
+                trace("INFO", "Creating options_switch.yy...");
+                //ok so funny thing is all fields we can modify are actually universal for both 2024 and whatever came before, iPhones are AWESOME!
                 if (selectedRuntime.Contains("2024"))
                 {
                     //default for now, we're gonna add some stuff later for it
                     YYOptions2024 options = new YYOptions2024
                     {
                         option_switch_allow_debug_output = false,
+                        option_switch_check_nsp_publish_errors = false,
                         option_switch_enable_fileaccess_checking = false,
                         option_switch_interpolate_pixels = true,
                         option_switch_project_nmeta = $"{projDir}\\options\\switch\\application.nmeta", //default path, honestly this is supposed to NOT be used since NintendoSDK is kinda GULP behind locked doors. we're using other stuff for nsp metadata anyways.
@@ -503,7 +469,7 @@ namespace ZeusNX
                         option_switch_texture_page = "2048x2048", //there's only 7 options i'll deal with that in the project settings tab
                         option_switch_use_splash = splashCheck.IsChecked == true ? true : false //i s'pose
                     };
-
+                    File.WriteAllText($"{projDir}\\options\\switch\\options_switch.yy", JsonConvert.SerializeObject(options, Formatting.Indented));
                 }
                 else
                 {
@@ -518,9 +484,11 @@ namespace ZeusNX
                         option_switch_texture_page = "2048x2048", //there's only 7 options i'll deal with that in the project settings tab
                         option_switch_use_splash = splashCheck.IsChecked == true ? true : false //i s'pose
                     };
+                    File.WriteAllText($"{projDir}\\options\\switch\\options_switch.yy", JsonConvert.SerializeObject(options, Formatting.Indented));
                 }
             }
-                trace("INFO", "Preprocessing GMS2 project...");
+
+            trace("INFO", "Preprocessing GMS2 project...");
             string AssetCompilerARG = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{titleName}\" /td=\"{buildDir}\\tmp\" /cd=\"{buildDir}\\cache\" /rtp=\"{runtimePath}\" /ffe=\"eXpvfGtxgjeDg202c3h+b3Z2c31veH1vNnh/dnZzfXI2dnlxc3hpfX15Nn5vfX4=\" /m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /sh=True /nodnd /cfg=\"{projConfig}\" /o=\"{buildDir}\\nsp\\romfs\" /optionsini=\"C:\\Users\\amyme\\Documents\\RussellNX\\runners\\build2024.14.3.260\\romfs\\options.ini\" /baseproject=\"\" \"{projPath}\" /v /preprocess=\"{buildDir}\\cache\"";
 
             trace("INFO", $"GMAC ARGS: {AssetCompilerARG}");
@@ -594,7 +562,7 @@ namespace ZeusNX
                     }
                 }
             });
-            
+
             //now starts the fun part, copy over selected icon
             //TODO: add language support
             if (gameico.Source != null)
@@ -628,7 +596,7 @@ namespace ZeusNX
             if (Directory.Exists($"{buildDir}\\cache"))
                 Directory.Delete($"{buildDir}\\cache", true);
             //if (Directory.Exists($"{buildDir}\\nsp"))
-                //Directory.Delete($"{buildDir}\\nsp", true);
+            //Directory.Delete($"{buildDir}\\nsp", true);
             trace("INFO", "Build Complete!");
             buildnsp.IsEnabled = true;
         }
