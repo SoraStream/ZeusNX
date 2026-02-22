@@ -54,9 +54,6 @@
 				</Grid>
 			</StackPanel>
 			
-			<Separator Grid.Column="2" Width="1" VerticalAlignment="Stretch"
-						   Background="#D0D0D0" Margin="10,0"/>
-			
 			<StackPanel Grid.Column="2" Spacing="10" Margin="10,0">
 				<TextBlock Text="Runtime version:"/>
 				<Grid ColumnDefinitions="*, Auto">
@@ -70,13 +67,11 @@
 				<TextBlock Text="Advanced options:" FontWeight="Bold" Margin="0,5,0,0"/>
 				<CheckBox Name="splashCheck" Content="Enable Splash Screen?"/>
 				<CheckBox Name="preselecteduserCheck" Content="Require account on startup?"/>
+				<CheckBox Name="existingoptionsCheck" Content="Use existing optionsswitch.yy?"/>
 				
-				<TextBlock Text="Supported Languages:" Margin="0,5,0,0"/>
+				<TextBlock Text="Supported Languages:" FontWeight="Bold" Margin="0,5,0,0"/>
 				<CheckBox Content="AmericanEnglish" IsChecked="True"/>
 			</StackPanel>
-			
-			<Separator Grid.Column="2" Width="1" VerticalAlignment="Stretch"
-						   Background="#D0D0D0" Margin="10,0"/>
 			
 			<StackPanel Grid.Column="4" Spacing="5">
 				<TextBlock Text="Project:"/>
