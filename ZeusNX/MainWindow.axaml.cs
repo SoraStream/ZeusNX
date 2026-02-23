@@ -9,13 +9,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text.Json;
 using Newtonsoft.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ZeusNX.Ini;
 using ZeusNX.YYOptions;
+using ZeusNX.NMeta;
+using System.Xml.Serialization;
+using cImage = System.Drawing.Image;
+using System.Drawing.Imaging;
 
 namespace ZeusNX
 {
@@ -66,7 +69,15 @@ namespace ZeusNX
         }
         public void trace(string type, string message)
         {
-            logbox.Text += $"[{type}]: {message}\n";
+            try
+            {
+                logbox.Text += $"[{type}]: {message}\n";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to update logbox: {ex.Message}");
+            }
+
         }
 
         private void OnRefreshRuntimesClicked(object sender, RoutedEventArgs e)
@@ -265,6 +276,38 @@ namespace ZeusNX
             }
         }
 
+        private List<string> getSelectedLanguages()
+        {
+            var languageChecks = new (CheckBox box, string language)[]
+            {
+                (aeCheck, "AmericanEnglish"),
+                (cfCheck, "CanadianFrench"),
+                (saCheck, "LatinAmericanSpanish"),
+                (bpCheck, "BrazilianPortuguese"),
+                (jpCheck, "Japanese"),
+                (csCheck, "SimplifiedChinese"),
+                (ctCheck, "TraditionalChinese"),
+                (haCheck, "Korean"),
+                (beCheck, "BritishEnglish"),
+                (frCheck, "French"),
+                (geCheck, "German"),
+                (esCheck, "Spanish"),
+                (itCheck, "Italian"),
+                (duCheck, "Dutch"),
+                (poCheck, "Portuguese"),
+                (ruCheck, "Russian")
+            };
+            List<string> languages = new List<string>();
+            foreach (var (box, language) in languageChecks)
+            {
+                if (box.IsChecked == true)
+                {
+                    languages.Add(language);
+                }
+            }
+            return languages;
+        }
+
         private void OnCleanClicked(object sender, RoutedEventArgs e)
         {
             logbox.Text = "";
@@ -278,14 +321,13 @@ namespace ZeusNX
             trace("INFO", "Build START!");
             //start by checking if shit is filled out
             var projPath = projpath.Text;
-            string[] tempStr = projPath.Split('\\');
-            var projDir = projPath.Replace("\\" + tempStr[tempStr.Length - 1], ""); 
-            var titleID = titleid.Text;
+            var titleID = titleid.Text == null ? null : titleid.Text.ToLower();
             var titleName = titlename.Text == null ? "ZeusNX Application" : titlename.Text;
             var titleAuthor = titleauthor.Text == null ? "ZeusNX User" : titleauthor.Text;
             var titleVer = titleversion.Text == null ? "0.0.0" : titleversion.Text;
             var projConfig = projconf.Text == null ? "Default" : projconf.Text;
             var keyPath = keypath.Text;
+            List<string> selLanguages = getSelectedLanguages();
 
             if (keyPath == null || !keyPath.Contains(".keys"))
             {
@@ -302,6 +344,13 @@ namespace ZeusNX
                 trace("ERROR", "Invalid TitleID!");
                 return;
             }
+            if (selLanguages.Count == 0)
+            {
+                trace("ERROR", "At least one language needs to be selected!");
+                return;
+            }
+            string[] tempStr = projPath.Split('\\');
+            string projDir = projPath.Replace("\\" + tempStr[tempStr.Length - 1], "");
             var selectedRuntime = runtimesel.SelectedItem as string;
             var branch = selectedRuntime?.Split('|')[1].Trim();
             selectedRuntime = selectedRuntime?.Split('|')[0].Trim();
@@ -333,15 +382,25 @@ namespace ZeusNX
                     string temp = versionString.Split('.')[0];
                     temp += "." + versionString.Split('.')[1];
                     string temp2 = selectedRuntime.Split(".")[0];
-                    temp2 = "." + selectedRuntime.Split(".")[1];
-                    temp2.Replace("runtime-", "");
+                    temp2 += "." + selectedRuntime.Split(".")[1];
+                    temp2.Replace("runtime-", "").Trim();
                     if (temp != temp2)
                     {
-                        trace("WARN", "Project versions don't match, there may be dragons!");
+                        if (!temp2.Contains("2024") && temp.Contains("2024"))
+                        {
+                            trace("ERROR", "Trying to build a 2024 project with a pre-2024 runtime will NOT work!");
+                            return;
+                        }
+                        else if (temp2.Contains("2024") && !temp.Contains("2024"))
+                        {
+                            trace("ERROR", "Trying to build a pre-2024 project with a 2024 runtime will NOT work!");
+                            return;
+                        }
+                        else
+                            trace("WARN", "Project versions don't match, there may be dragons!");
                     }
                 }
             }
-
 
             //patch GMAssetCompiler.dll to ignore licence checks
             trace("INFO", "Patching GMAssetCompiler.dll...");
@@ -460,7 +519,6 @@ namespace ZeusNX
                     YYOptions2024 options = new YYOptions2024
                     {
                         option_switch_allow_debug_output = false,
-                        option_switch_check_nsp_publish_errors = false,
                         option_switch_enable_fileaccess_checking = false,
                         option_switch_interpolate_pixels = true,
                         option_switch_project_nmeta = $"{projDir}\\options\\switch\\application.nmeta", //default path, honestly this is supposed to NOT be used since NintendoSDK is kinda GULP behind locked doors. we're using other stuff for nsp metadata anyways.
@@ -493,73 +551,69 @@ namespace ZeusNX
 
             trace("INFO", $"GMAC ARGS: {AssetCompilerARG}");
             await Task.Run(() =>
-            {
-                {
-                    ProcessStartInfo psi = new ProcessStartInfo
-                    {
-                        FileName = $"{runtimePath}{compilerPath}\\GMAssetCompiler.exe",
-                        Arguments = AssetCompilerARG,
-                        CreateNoWindow = true,
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
-                    };
-
-                    using (Process process = new Process { StartInfo = psi })
-                    {
-                        process.OutputDataReceived += (s, e) =>
-                        {
-                            if (!string.IsNullOrEmpty(e.Data))
-                                Dispatcher.UIThread.InvokeAsync(() => trace("GMAC", e.Data));
-                        };
-                        process.ErrorDataReceived += (s, e) =>
-                        {
-                            if (!string.IsNullOrEmpty(e.Data))
-                                Dispatcher.UIThread.InvokeAsync(() => trace("GMACERR", e.Data));
-                        };
-                        process.Start();
-                        process.BeginOutputReadLine();
-                        process.BeginErrorReadLine();
-                        process.WaitForExit();
-                        if (process.ExitCode != 0)
-                            trace("ERROR", $"GMAssetCompiler exited with code {process.ExitCode}, Something went wrong.");
-                    }
-                }
+            {           
+               ProcessStartInfo psi = new ProcessStartInfo
+               {
+                   FileName = $"{runtimePath}{compilerPath}\\GMAssetCompiler.exe",
+                   Arguments = AssetCompilerARG,
+                   CreateNoWindow = true,
+                   UseShellExecute = false,
+                   RedirectStandardOutput = true,
+                   RedirectStandardError = true
+               };
+            
+               using (Process process = new Process { StartInfo = psi })
+               {
+                   process.OutputDataReceived += (s, e) =>
+                   {
+                       if (!string.IsNullOrEmpty(e.Data))
+                           Dispatcher.UIThread.InvokeAsync(() => trace("GMAC", e.Data));
+                   };
+                   process.ErrorDataReceived += (s, e) =>
+                   {
+                       if (!string.IsNullOrEmpty(e.Data))
+                           Dispatcher.UIThread.InvokeAsync(() => trace("GMACERR", e.Data));
+                   };
+                   process.Start();
+                   process.BeginOutputReadLine();
+                   process.BeginErrorReadLine();
+                   process.WaitForExit();
+                   if (process.ExitCode != 0)
+                       trace("ERROR", $"GMAssetCompiler exited with code {process.ExitCode}, Something went wrong.");
+               }
             });
             trace("INFO", "Compiling GMS2 project...");
             AssetCompilerARG = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{titleName}\" /td=\"{buildDir}\tmp\" /cd=\"{buildDir}\\cache\" /rtp=\"{runtimePath}\" /ffe=\"eXpvfGtxgjeDg202c3h+b3Z2c31veH1vNnh/dnZzfXI2dnlxc3hpfX15Nn5vfX4=\" /m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /sh=True /nodnd /cfg=\"{projConfig}\" /o=\"{buildDir}\\nsp\\romfs\" /optionsini=\"\" /baseproject=\"\" \"{projPath}\" /v";
             await Task.Run(() =>
             {
+                ProcessStartInfo psi = new ProcessStartInfo
                 {
-                    ProcessStartInfo psi = new ProcessStartInfo
-                    {
-                        FileName = $"{runtimePath}{compilerPath}\\GMAssetCompiler.exe",
-                        Arguments = AssetCompilerARG,
-                        CreateNoWindow = true,
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
-                    };
+                    FileName = $"{runtimePath}{compilerPath}\\GMAssetCompiler.exe",
+                    Arguments = AssetCompilerARG,
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
 
-                    using (Process process = new Process { StartInfo = psi })
+                using (Process process = new Process { StartInfo = psi })
+                {
+                    process.OutputDataReceived += (s, e) =>
                     {
-                        process.OutputDataReceived += (s, e) =>
-                        {
-                            if (!string.IsNullOrEmpty(e.Data))
-                                Dispatcher.UIThread.InvokeAsync(() => trace("GMAC", e.Data));
-                        };
-                        process.ErrorDataReceived += (s, e) =>
-                        {
-                            if (!string.IsNullOrEmpty(e.Data))
-                                Dispatcher.UIThread.InvokeAsync(() => trace("GMACERR", e.Data));
-                        };
-                        process.Start();
-                        process.BeginOutputReadLine();
-                        process.BeginErrorReadLine();
-                        process.WaitForExit();
-                        if (process.ExitCode != 0)
-                            trace("ERROR", $"GMAssetCompiler exited with code {process.ExitCode}, Something went wrong.");
-                    }
+                        if (!string.IsNullOrEmpty(e.Data))
+                            Dispatcher.UIThread.InvokeAsync(() => trace("GMAC", e.Data));
+                    };
+                    process.ErrorDataReceived += (s, e) =>
+                    {
+                        if (!string.IsNullOrEmpty(e.Data))
+                            Dispatcher.UIThread.InvokeAsync(() => trace("GMACERR", e.Data));
+                    };
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                    process.WaitForExit();
+                    if (process.ExitCode != 0)
+                        trace("ERROR", $"GMAssetCompiler exited with code {process.ExitCode}, Something went wrong.");
                 }
             });
 
@@ -567,11 +621,20 @@ namespace ZeusNX
             //TODO: add language support
             if (gameico.Source != null)
             {
-                trace("INFO", "Copying over icon...");
-                var bitmap = gameico.Source as Bitmap;
-                using (var stream = File.OpenWrite($"{buildDir}\\nsp\\control\\icon_AmericanEnglish.dat"))
+                trace("INFO", "Copying over icon(s)...");
+                Directory.CreateDirectory($"{buildDir}\\tmp\\control");
+                foreach (var lang in selLanguages)
                 {
-                    bitmap.Save(stream);
+                    Bitmap bitmap;
+                    if (sameicoCheck.IsChecked == true)
+                        bitmap = gameico.Source as Bitmap;
+                    else
+                        bitmap = gameico.Source as Bitmap;
+                    bitmap.Save($"{buildDir}\\tmp\\control\\icon_{lang}.png", 90);
+                    bitmap.Dispose();
+
+                    using (cImage png = cImage.FromFile($"{buildDir}\\tmp\\control\\icon_{lang}.png"))
+                        png.Save($"{buildDir}\\nsp\\control\\icon_{lang}.dat", ImageFormat.Jpeg);
                 }
             }
 
@@ -586,15 +649,118 @@ namespace ZeusNX
                 }
             }
 
+            //generate xml for hptnacp
+            trace("INFO", "Generating control.nacp...");
+            List<Title> langList = new List<Title>();
+            foreach (var language in selLanguages)
+            {
+                langList.Add(new Title
+                {
+                    Language = language,
+                    Name = titleName,
+                    Publisher = titleAuthor
+                });
+            }
+            Application nacpXML = new Application
+            {
+                Title = langList,
+                StartupUserAccount = preselecteduserCheck.IsChecked == true ? "Required" : "None",
+                SupportedLanguage = selLanguages,
+                Screenshot = "Allow",
+                VideoCapture = "Enable",
+                PresenceGroupId = $"0x{titleID}",
+                DisplayVersion = titleVer,
+                SaveDataOwnerId = $"0x{titleID}",
+                AddOnContentBaseId = $"0x{titleID}",
+                LocalCommunicationId = $"0x{titleID}",
+                SeedForPseudoDeviceId = $"0x{titleID}"
+            };
+            XmlSerializer serializer = new XmlSerializer(typeof(Application));
+            using (FileStream fs = new FileStream($"{buildDir}\\tmp\\control.xml", FileMode.Create))
+                serializer.Serialize(fs, nacpXML);
+            
+            string hptnacpArgs = $"-i \"{buildDir}\\tmp\\control.xml\" -o \"{buildDir}\\nsp\\control\\control.nacp\" -a createnacp";
+            await Task.Run(() =>
+            {
+                ProcessStartInfo psi = new ProcessStartInfo
+                {
+                    FileName = $"Tools\\hptnacp.exe",
+                    Arguments = hptnacpArgs,
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+
+                using (Process process = new Process { StartInfo = psi })
+                {
+                    process.OutputDataReceived += (s, e) =>
+                    {
+                        if (!string.IsNullOrEmpty(e.Data))
+                            Dispatcher.UIThread.InvokeAsync(() => trace("HPTNACP", e.Data));
+                    };
+                    process.ErrorDataReceived += (s, e) =>
+                    {
+                        if (!string.IsNullOrEmpty(e.Data))
+                            Dispatcher.UIThread.InvokeAsync(() => trace("HPTNACPERR", e.Data));
+                    };
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                    process.WaitForExit();
+                    if (process.ExitCode != 0)
+                        trace("ERROR", $"hptnacp exited with code {process.ExitCode}, Something went wrong.");
+                }
+            });
+
+            //pack nsp
+            trace("INFO", "Building NSP...");
+            string hpArgs = $"-k \"{keyPath}\" --tempdir \"{buildDir}\\hactmp\" --backupdir \"{buildDir}\\cache\" --ncadir \"{buildDir}\\cache\\nca\" --nspdir \"{buildDir}\" --exefsdir \"{buildDir}\\nsp\\exefs\" --controldir \"{buildDir}\\nsp\\control\" --logodir \"{buildDir}\\nsp\\logo\" --romfsdir \"{buildDir}\\nsp\\romfs\"";
+            //if (offlineManualPath.Text != null && offlineManualPath.Text != string.Empty)
+            //    hpArgs += $" --htmldocdir \"{offlineManualPath.Text}\"";
+            hpArgs += $" --titleid \"{titleID}\" --titlename \"{titleName}\" --titlepublisher \"{titleAuthor}\"";
+            await Task.Run(() =>
+            {
+                ProcessStartInfo psi = new ProcessStartInfo
+                {
+                    FileName = $"Tools\\hacbrewpack.exe",
+                    Arguments = hpArgs,
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+            
+                using (Process process = new Process { StartInfo = psi })
+                {
+                    process.OutputDataReceived += (s, e) =>
+                    {
+                        if (!string.IsNullOrEmpty(e.Data))
+                            Dispatcher.UIThread.InvokeAsync(() => trace("HPTNACP", e.Data));
+                    };
+                    process.ErrorDataReceived += (s, e) =>
+                    {
+                        if (!string.IsNullOrEmpty(e.Data))
+                            Dispatcher.UIThread.InvokeAsync(() => trace("HPTNACPERR", e.Data));
+                    };
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                    process.WaitForExit();
+                    if (process.ExitCode != 0)
+                        trace("ERROR", $"hptnacp exited with code {process.ExitCode}, Something went wrong.");
+                }
+            });
+
             //cleanup
             trace("INFO", "Restoring GMAssetCompiler.dll");
             File.Delete($"{runtimePath}{compilerPath}\\GMAssetCompiler.dll");
             File.Copy($"{runtimePath}{compilerPath}\\GMAssetCompiler.bak", $"{runtimePath}{compilerPath}\\GMAssetCompiler.dll");
             File.Delete($"{runtimePath}{compilerPath}\\GMAssetCompiler.bak");
-            if (Directory.Exists($"{buildDir}\\tmp"))
-                Directory.Delete($"{buildDir}\\tmp", true);
-            if (Directory.Exists($"{buildDir}\\cache"))
-                Directory.Delete($"{buildDir}\\cache", true);
+            //if (Directory.Exists($"{buildDir}\\tmp"))
+            //    Directory.Delete($"{buildDir}\\tmp", true);
+            //if (Directory.Exists($"{buildDir}\\cache"))
+            //    Directory.Delete($"{buildDir}\\cache", true);
             //if (Directory.Exists($"{buildDir}\\nsp"))
             //Directory.Delete($"{buildDir}\\nsp", true);
             trace("INFO", "Build Complete!");

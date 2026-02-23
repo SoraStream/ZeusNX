@@ -31,82 +31,139 @@
 			<Setter Property="Background" Value="#AA000000"/>
 			<Setter Property="Foreground" Value="White"/>
 		</Style>
+		
+		<Style Selector="TabItem">
+			<Setter Property="FontSize" Value="11"/>
+			<Setter Property="FontWeight" Value="Bold"/>
+			<Setter Property="MinHeight" Value="24"/>
+			<Setter Property="VerticalContentAlignment" Value="Center"/>
+		</Style>
 	</Window.Styles>
 	
-	<Grid RowDefinitions="Auto, *, Auto" Margin="10">
+	
+	<Grid RowDefinitions="*, Auto, Auto" Margin="10">
+		<TabControl Grid.Row="0" Margin="10">
+			<TabItem Header="General">
+				<Grid Grid.Row="0" ColumnDefinitions="250, 30, 350, 30, *" Margin="0,0,0,10">
 
-		<Grid Grid.Row="0" ColumnDefinitions="250, 30, 350, 30, *" Margin="0,0,0,10">
+					<StackPanel Grid.Column="0" Spacing="8">
+						<TextBlock Text="Switch Icon:" FontWeight="SemiBold"/>
+						<Grid Width="256" Height="256">
+							<Border BorderBrush="#444" BorderThickness="1" CornerRadius="4" ClipToBounds="True">
+								<Image Name="gameico" Source="avares://ZeusNX/Assets/ico_default.jpg" Stretch="UniformToFill"/>
+							</Border>
+							<Button Classes="image-overlay" Content="Change Icon..." Click="OnSelectIconClicked"/>
+						</Grid>
+						<TextBlock Text="Splash:" FontWeight="SemiBold"/>
+						<Grid Width="256" Height="144">
+							<Border BorderBrush="#444" BorderThickness="1" CornerRadius="4" ClipToBounds="True">
+								<Image Name="gamesplash" Source="avares://ZeusNX/Assets/splash_default.png" Stretch="UniformToFill"/>
+							</Border>
+							<Button Classes="image-overlay" Content="Change Splash..." Click="OnSelectSplashClicked"/>
+						</Grid>
+					</StackPanel>
 
-			<StackPanel Grid.Column="0" Spacing="8">
-				<TextBlock Text="Switch Icon:" FontWeight="SemiBold"/>
-				<Grid Width="256" Height="256">
-					<Border BorderBrush="#444" BorderThickness="1" CornerRadius="4" ClipToBounds="True">
-						<Image Name="gameico" Source="avares://ZeusNX/Assets/ico_default.jpg" Stretch="UniformToFill"/>
-					</Border>
-					<Button Classes="image-overlay" Content="Change Icon..." Click="OnSelectIconClicked"/>
+					<StackPanel Grid.Column="2" Spacing="10" Margin="10,0">
+						<TextBlock Text="Runtime version:"/>
+						<Grid ColumnDefinitions="*, Auto">
+							<ComboBox Name="runtimesel" HorizontalAlignment="Stretch" SelectedIndex="0"/>
+							<Button Grid.Column="1"
+									Content="Refresh"
+									Click="OnRefreshRuntimesClicked"
+									Margin="5,0,0,0"/>
+						</Grid>
+
+						<TextBlock Text="Quick options:" FontWeight="Bold" Margin="0,5,0,0"/>
+						<CheckBox Name="existingoptionsCheck" Content="Use existing optionsswitch.yy?"/>
+					</StackPanel>
+
+					<StackPanel Grid.Column="4" Spacing="5">
+						<TextBlock Text="Project:"/>
+						<Grid ColumnDefinitions="*, 40">
+							<TextBox Name="projpath" Watermark="C:\path\to\proj.yyp"/>
+							<Button Grid.Column="1" Content="..." HorizontalAlignment="Right" Click="OnBrowseProjectClicked"/>
+						</Grid>
+
+						<TextBlock Text="Title ID:"/>
+						<TextBox Name="titleid" MaxLength="16" TextChanged="OnTitleIdInput" Watermark="0000000000000000"/>
+
+						<TextBlock Text="Name:"/>
+						<TextBox Name="titlename" MaxLength="127" Watermark="GameMaker Runner"/>
+
+						<TextBlock Text="Author:"/>
+						<TextBox Name="titleauthor" MaxLength="63" Watermark="SoraStream"/>
+
+						<TextBlock Text="Version:"/>
+						<TextBox Name="titleversion" MaxLength="15" Watermark="0.0.0"/>
+
+						<TextBlock Text="Configuration name:"/>
+						<TextBox Name="projconf" Watermark="Default"/>
+
+						<TextBlock Text="Keys file:"/>
+						<Grid ColumnDefinitions="*, 40">
+							<TextBox Name="keypath" Watermark="C:\path\to\prod.keys"/>
+							<Button Grid.Column="1" Content="..." HorizontalAlignment="Right" Click="OnBrowseKeysClicked"/>
+						</Grid>
+					</StackPanel>
 				</Grid>
-				<TextBlock Text="Splash:" FontWeight="SemiBold"/>
-				<Grid Width="256" Height="144">
-					<Border BorderBrush="#444" BorderThickness="1" CornerRadius="4" ClipToBounds="True">
-						<Image Name="gamesplash" Source="avares://ZeusNX/Assets/splash_default.png" Stretch="UniformToFill"/>
-					</Border>
-					<Button Classes="image-overlay" Content="Change Splash..." Click="OnSelectSplashClicked"/>
+			</TabItem>
+			<TabItem Header="Project Settings">
+				<Grid ColumnDefinitions="250, 250, 250, *" Margin="10">
+					<StackPanel Grid.Column="0" Spacing="10" Margin="10">
+						<TextBlock Text="GMS2 Project Settings:" FontWeight="Bold"/>
+						<CheckBox Name="preselecteduserCheck" Content="Require account on startup?"/>
+						<CheckBox Name="debugCheck" Content="Enable debug output?"/>
+						<CheckBox Name="fileaccessCheck" Content="Enable file access logging to SD card?"/>
+						<CheckBox Name="interpolateCheck" Content="Interpolate colors between pixels?"/>
+						<CheckBox Name="scaleCheck" Content="Keep aspect ratio?"/>
+						<TextBlock Text="Texture Page Size:"/>
+						<ComboBox Name="texturesizesel" Width="200" SelectedIndex="3">
+							<ComboBoxItem>256x256</ComboBoxItem>
+							<ComboBoxItem>512x512</ComboBoxItem>
+							<ComboBoxItem>1024x1024</ComboBoxItem>
+							<ComboBoxItem>2048x2048</ComboBoxItem>
+							<ComboBoxItem>4096x4096</ComboBoxItem>
+							<ComboBoxItem>8192x8192</ComboBoxItem>
+							<ComboBoxItem>16384x16384</ComboBoxItem>
+						</ComboBox>
+						<CheckBox Name="splashCheck" Content="Enable Splash Screen?"/>
+					</StackPanel>
+					<StackPanel Grid.Column="1" Spacing="10" Margin="10">
+						<TextBlock Text="Supported Languages:" FontWeight="Bold"/>
+						<CheckBox Name="aeCheck" Content="American English" IsChecked="True"/>
+						<CheckBox Name="cfCheck" Content="Canadian French"/>
+						<CheckBox Name="saCheck" Content="Central and South American Spanish"/>
+						<CheckBox Name="bpCheck" Content="Brazilian Portuguese"/>
+						<CheckBox Name="jpCheck" Content="Japanese"/>
+						<CheckBox Name="csCheck" Content="Chinese (Simplified)"/>
+						<CheckBox Name="ctCheck" Content="Chinese (Traditional)"/>
+						<CheckBox Name="haCheck" Content="Hangul"/>
+						<CheckBox Name="beCheck" Content="British English"/>
+						<CheckBox Name="frCheck" Content="French"/>
+					</StackPanel>
+					<StackPanel Grid.Column="2" Spacing="10" Margin="10">
+						<TextBlock/>
+						<CheckBox Name="geCheck" Content="German"/>
+						<CheckBox Name="esCheck" Content="European Spanish"/>
+						<CheckBox Name="itCheck" Content="Italian"/>
+						<CheckBox Name="duCheck" Content="Dutch"/>
+						<CheckBox Name="poCheck" Content="Portuguese"/>
+						<CheckBox Name="ruCheck" Content="Russian"/>
+					</StackPanel>
+					<StackPanel Grid.Column="3" Spacing="10" Margin="10">
+						<TextBlock Text="ZeusNX Settings:" FontWeight="Bold"/>
+						<CheckBox Name="sameicoCheck" Content="Use same icon across all selected languages?"/>
+						<TextBlock Text="Offline manual path:"/>
+						<TextBox Name="offlineManualPath" Watermark="Leave blank to have none."/>
+					</StackPanel>
 				</Grid>
-			</StackPanel>
-			
-			<StackPanel Grid.Column="2" Spacing="10" Margin="10,0">
-				<TextBlock Text="Runtime version:"/>
-				<Grid ColumnDefinitions="*, Auto">
-					<ComboBox Name="runtimesel" HorizontalAlignment="Stretch" SelectedIndex="0"/>
-					<Button Grid.Column="1"
-							Content="Refresh"
-							Click="OnRefreshRuntimesClicked"
-							Margin="5,0,0,0"/>
-				</Grid>
-
-				<TextBlock Text="Advanced options:" FontWeight="Bold" Margin="0,5,0,0"/>
-				<CheckBox Name="splashCheck" Content="Enable Splash Screen?"/>
-				<CheckBox Name="preselecteduserCheck" Content="Require account on startup?"/>
-				<CheckBox Name="existingoptionsCheck" Content="Use existing optionsswitch.yy?"/>
-				
-				<TextBlock Text="Supported Languages:" FontWeight="Bold" Margin="0,5,0,0"/>
-				<CheckBox Content="AmericanEnglish" IsChecked="True"/>
-			</StackPanel>
-			
-			<StackPanel Grid.Column="4" Spacing="5">
-				<TextBlock Text="Project:"/>
-				<Grid ColumnDefinitions="*, 40">
-					<TextBox Name="projpath" Watermark="C:\path\to\proj.yyp"/>
-					<Button Grid.Column="1" Content="..." HorizontalAlignment="Right" Click="OnBrowseProjectClicked"/>
-				</Grid>
-
-				<TextBlock Text="Title ID:"/>
-				<TextBox Name="titleid" MaxLength="16" TextChanged="OnTitleIdInput" Watermark="0000000000000000"/>
-
-				<TextBlock Text="Name:"/>
-				<TextBox Name="titlename" MaxLength="127" Watermark="GameMaker Runner"/>
-
-				<TextBlock Text="Author:"/>
-				<TextBox Name="titleauthor" MaxLength="63" Watermark="SoraStream"/>
-
-				<TextBlock Text="Version:"/>
-				<TextBox Name="titleversion" MaxLength="15" Watermark="0.0.0"/>
-
-				<TextBlock Text="Configuration name:"/>
-				<TextBox Name="projconf" Watermark="Default"/>
-
-				<TextBlock Text="Keys file:"/>
-				<Grid ColumnDefinitions="*, 40">
-					<TextBox Name="keypath" Watermark="C:\path\to\prod.keys"/>
-					<Button Grid.Column="1" Content="..." HorizontalAlignment="Right" Click="OnBrowseKeysClicked"/>
-				</Grid>
-			</StackPanel>
-		</Grid>
-
+			</TabItem>
+		</TabControl>
+		
 		<StackPanel Grid.Row="1" Margin="0,10,0,0">
 			<TextBlock Text="Log:"/>
 			<TextBox Name="logbox"
-					 Height="150"
+					 Height="105"
 					 AcceptsReturn="True"
 					 IsReadOnly="True"
 					 FontFamily="Cascadia Code"
@@ -119,7 +176,6 @@
 			<Button Grid.Column="0" Content="Export log" Margin="0,0,5,0"/>
 			<Button Grid.Column="1" Content="Clean log" Click="OnCleanClicked"/>
 			<Button Name="buildnsp" Grid.Column="3" Content="Build NSP" Padding="20,5" FontWeight="Bold" Click="BuildNSP"/>
-		</Grid>
-
+		</Grid>		
 	</Grid>
 </Window>

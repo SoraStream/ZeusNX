@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36908.2 d17.14
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.36631.11
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZeusNX", "ZeusNX\ZeusNX.csproj", "{99115AF8-CD2B-48AB-B6FA-508E0C8DEDC5}"
 EndProject

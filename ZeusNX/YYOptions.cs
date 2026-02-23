@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace ZeusNX.YYOptions
 {
@@ -34,7 +29,7 @@ namespace ZeusNX.YYOptions
         public string Name { get; } = "Switch";
         public string name { get; } = "Switch";
         public bool option_switch_allow_debug_output { get; set; }
-        public bool option_switch_check_nsp_publish_errors { get; set; }
+        public bool option_switch_check_nsp_publish_errors { get; } = false; //genuinely useless just leave it as false
         public bool option_switch_enable_fileaccess_checking { get; set; }
         public bool option_switch_enable_nex_libraries { get; } = false;
         public bool option_switch_enable_npln_libraries { get; } = false;
