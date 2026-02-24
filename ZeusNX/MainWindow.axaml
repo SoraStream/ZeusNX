@@ -50,20 +50,38 @@
 						<TextBlock Text="Switch Icon:" FontWeight="SemiBold"/>
 						<Grid Width="256" Height="256">
 							<Border BorderBrush="#444" BorderThickness="1" CornerRadius="4" ClipToBounds="True">
-								<Image Name="gameico" Source="avares://ZeusNX/Assets/ico_default.jpg" Stretch="UniformToFill"/>
+								<Image Name="gameico" Stretch="UniformToFill"/>
 							</Border>
 							<Button Classes="image-overlay" Content="Change Icon..." Click="OnSelectIconClicked"/>
 						</Grid>
 						<TextBlock Text="Splash:" FontWeight="SemiBold"/>
 						<Grid Width="256" Height="144">
 							<Border BorderBrush="#444" BorderThickness="1" CornerRadius="4" ClipToBounds="True">
-								<Image Name="gamesplash" Source="avares://ZeusNX/Assets/splash_default.png" Stretch="UniformToFill"/>
+								<Image Name="gamesplash" Stretch="UniformToFill"/>
 							</Border>
 							<Button Classes="image-overlay" Content="Change Splash..." Click="OnSelectSplashClicked"/>
 						</Grid>
 					</StackPanel>
 
 					<StackPanel Grid.Column="2" Spacing="10" Margin="10,0">
+						<StackPanel Spacing="5" Margin="0,0,0,15">
+							<TextBlock Text="Current Metadata Language:" FontSize="12" FontWeight="SemiBold" Foreground="#AAA"/>
+							<StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+								<TextBlock Name="langStatusText" Text="Language is not Enabled!" IsVisible="False" FontSize="10" FontWeight="Bold" Foreground="#FF0000"/>
+							</StackPanel>
+							<Grid ColumnDefinitions="Auto, *, Auto">
+								<Button Grid.Column="0" Content="◀" Click="OnPrevLangClicked" Width="35"/>
+
+								<Border Grid.Column="1" Background="#2D2D2D" CornerRadius="4" Margin="5,0">
+									<TextBlock Name="currentLang"
+											   HorizontalAlignment="Center"
+											   VerticalAlignment="Center"
+											   FontWeight="Bold"/>
+								</Border>
+
+								<Button Grid.Column="2" Content="▶" Click="OnNextLangClicked" Width="35"/>
+							</Grid>
+						</StackPanel>
 						<TextBlock Text="Runtime version:"/>
 						<Grid ColumnDefinitions="*, Auto">
 							<ComboBox Name="runtimesel" HorizontalAlignment="Stretch" SelectedIndex="0"/>
@@ -130,29 +148,31 @@
 					</StackPanel>
 					<StackPanel Grid.Column="1" Spacing="10" Margin="10">
 						<TextBlock Text="Supported Languages:" FontWeight="Bold"/>
-						<CheckBox Name="aeCheck" Content="American English" IsChecked="True"/>
-						<CheckBox Name="cfCheck" Content="Canadian French"/>
-						<CheckBox Name="saCheck" Content="Central and South American Spanish"/>
-						<CheckBox Name="bpCheck" Content="Brazilian Portuguese"/>
-						<CheckBox Name="jpCheck" Content="Japanese"/>
-						<CheckBox Name="csCheck" Content="Chinese (Simplified)"/>
-						<CheckBox Name="ctCheck" Content="Chinese (Traditional)"/>
-						<CheckBox Name="haCheck" Content="Hangul"/>
-						<CheckBox Name="beCheck" Content="British English"/>
-						<CheckBox Name="frCheck" Content="French"/>
+						<CheckBox Name="aeCheck" Content="American English" IsEnabled="False" IsChecked="True"/>
+						<CheckBox IsCheckedChanged="onLangCheck" Name="cfCheck" Content="Canadian French"/>
+						<CheckBox IsCheckedChanged="onLangCheck" Name="saCheck" Content="Latin American Spanish"/>
+						<CheckBox IsCheckedChanged="onLangCheck" Name="bpCheck" Content="Brazilian Portuguese"/>
+						<CheckBox IsCheckedChanged="onLangCheck" Name="jpCheck" Content="Japanese"/>
+						<CheckBox IsCheckedChanged="onLangCheck" Name="csCheck" Content="Chinese (Simplified)"/>
+						<CheckBox IsCheckedChanged="onLangCheck" Name="ctCheck" Content="Chinese (Traditional)"/>
+						<CheckBox IsCheckedChanged="onLangCheck" Name="haCheck" Content="Korean"/>
+						<CheckBox IsCheckedChanged="onLangCheck" Name="beCheck" Content="British English"/>
+						<CheckBox IsCheckedChanged="onLangCheck" Name="frCheck" Content="French"/>
 					</StackPanel>
 					<StackPanel Grid.Column="2" Spacing="10" Margin="10">
 						<TextBlock/>
-						<CheckBox Name="geCheck" Content="German"/>
-						<CheckBox Name="esCheck" Content="European Spanish"/>
-						<CheckBox Name="itCheck" Content="Italian"/>
-						<CheckBox Name="duCheck" Content="Dutch"/>
-						<CheckBox Name="poCheck" Content="Portuguese"/>
-						<CheckBox Name="ruCheck" Content="Russian"/>
+						<CheckBox IsCheckedChanged="onLangCheck" Name="geCheck" Content="German"/>
+						<CheckBox IsCheckedChanged="onLangCheck" Name="esCheck" Content="European Spanish"/>
+						<CheckBox IsCheckedChanged="onLangCheck" Name="itCheck" Content="Italian"/>
+						<CheckBox IsCheckedChanged="onLangCheck" Name="duCheck" Content="Dutch"/>
+						<CheckBox IsCheckedChanged="onLangCheck" Name="poCheck" Content="Portuguese"/>
+						<CheckBox IsCheckedChanged="onLangCheck" Name="ruCheck" Content="Russian"/>
 					</StackPanel>
 					<StackPanel Grid.Column="3" Spacing="10" Margin="10">
 						<TextBlock Text="ZeusNX Settings:" FontWeight="Bold"/>
 						<CheckBox Name="sameicoCheck" Content="Use same icon across all selected languages?"/>
+						<CheckBox Name="screenshotCheck" Content="Enable Screenshots?" IsChecked="True"/>
+						<CheckBox Name="recordCheck" Content="Enable Video Capture?" IsChecked="True"/>
 						<TextBlock Text="Offline manual path:"/>
 						<TextBox Name="offlineManualPath" Watermark="Leave blank to have none."/>
 					</StackPanel>

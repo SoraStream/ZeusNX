@@ -19,19 +19,42 @@ using ZeusNX.NMeta;
 using System.Xml.Serialization;
 using cImage = System.Drawing.Image;
 using System.Drawing.Imaging;
+using Avalonia.Media;
 
 namespace ZeusNX
 {
     public partial class MainWindow : Window
     {
-
+        private string ZeusNXVersion = "0.0.0";
+        private int langIndex = 0;
         public string compilerPath = "\\bin\\assetcompiler\\windows\\x64"; //append to runtime path.
+        public List<string> languages = new List<string> { "AmericanEnglish", 
+                                                           "CanadianFrench", 
+                                                           "LatinAmericanSpanish",
+                                                           "BrazilianPortuguese",
+                                                           "Japanese",
+                                                           "SimplifiedChinese",
+                                                           "TraditionalChinese",
+                                                           "Korean",
+                                                           "BritishEnglish",
+                                                           "French",
+                                                           "German",
+                                                           "Spanish",
+                                                           "Italian",
+                                                           "Dutch",
+                                                           "Portuguese",
+                                                           "Russian"};
+        public Dictionary<string, string> langNames = new Dictionary<string, string>();
+        public Dictionary<string, string> icoPaths = new Dictionary<string, string>();
+        public Dictionary<string, string> titleNames = new Dictionary<string, string>();
+        public Dictionary<string, string> titleAuthors = new Dictionary<string, string>();
 
         public MainWindow()
-        {
+        {         
             InitializeComponent();
+            InitDict();
             PopulateRuntimes();
-            trace("INFO", "Welcome to ZeusNX, Version 0.0.0");
+            trace("INFO", $"Welcome to ZeusNX, Version {ZeusNXVersion}");
         }
 
         //thank you https://learn.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
@@ -78,6 +101,125 @@ namespace ZeusNX
                 Console.WriteLine($"Failed to update logbox: {ex.Message}");
             }
 
+        }
+
+        private void InitDict()
+        {
+            //lang stuff
+            langNames.Add("AmericanEnglish", "American English");
+            langNames.Add("CanadianFrench", "Canadian French");
+            langNames.Add("LatinAmericanSpanish", "Latin American Spanish");
+            langNames.Add("BrazilianPortuguese", "Brazilian Portuguese");
+            langNames.Add("Japanese", "Japanese");
+            langNames.Add("SimplifiedChinese", "Chinese (Simplified)");
+            langNames.Add("TraditionalChinese", "Chinese (Traditional)");
+            langNames.Add("Korean", "Korean");
+            langNames.Add("BritishEnglish", "British English");
+            langNames.Add("French", "French");
+            langNames.Add("German", "German");
+            langNames.Add("Spanish", "European Spanish");
+            langNames.Add("Italian", "Italian");
+            langNames.Add("Dutch", "Dutch");
+            langNames.Add("Portuguese", "Portuguese");
+            langNames.Add("Russian", "Russian");
+            //icon stuff
+            icoPaths.Add("AmericanEnglish", "Runners\\shared\\ico_default.jpg");
+            icoPaths.Add("CanadianFrench", "Runners\\shared\\ico_default.jpg");
+            icoPaths.Add("LatinAmericanSpanish", "Runners\\shared\\ico_default.jpg");
+            icoPaths.Add("BrazilianPortuguese", "Runners\\shared\\ico_default.jpg");
+            icoPaths.Add("Japanese", "Runners\\shared\\ico_default.jpg");
+            icoPaths.Add("SimplifiedChinese", "Runners\\shared\\ico_default.jpg");
+            icoPaths.Add("TraditionalChinese", "Runners\\shared\\ico_default.jpg");
+            icoPaths.Add("Korean", "Runners\\shared\\ico_default.jpg");
+            icoPaths.Add("BritishEnglish", "Runners\\shared\\ico_default.jpg");
+            icoPaths.Add("French", "Runners\\shared\\ico_default.jpg");
+            icoPaths.Add("German", "Runners\\shared\\ico_default.jpg");
+            icoPaths.Add("Spanish", "Runners\\shared\\ico_default.jpg");
+            icoPaths.Add("Italian", "Runners\\shared\\ico_default.jpg");
+            icoPaths.Add("Dutch", "Runners\\shared\\ico_default.jpg");
+            icoPaths.Add("Portuguese", "Runners\\shared\\ico_default.jpg");
+            icoPaths.Add("Russian", "Runners\\shared\\ico_default.jpg");
+            //title stuff
+            titleNames.Add("AmericanEnglish", "ZeusNX Application");
+            titleNames.Add("CanadianFrench", "ZeusNX Application");
+            titleNames.Add("LatinAmericanSpanish", "ZeusNX Application");
+            titleNames.Add("BrazilianPortuguese", "ZeusNX Application");
+            titleNames.Add("Japanese", "ZeusNX Application");
+            titleNames.Add("SimplifiedChinese", "ZeusNX Application");
+            titleNames.Add("TraditionalChinese", "ZeusNX Application");
+            titleNames.Add("Korean", "ZeusNX Application");
+            titleNames.Add("BritishEnglish", "ZeusNX Application");
+            titleNames.Add("French", "ZeusNX Application");
+            titleNames.Add("German", "ZeusNX Application");
+            titleNames.Add("Spanish", "ZeusNX Application");
+            titleNames.Add("Italian", "ZeusNX Application");
+            titleNames.Add("Dutch", "ZeusNX Application");
+            titleNames.Add("Portuguese", "ZeusNX Application");
+            titleNames.Add("Russian", "ZeusNX Application");
+            //publisher stuff
+            titleAuthors.Add("AmericanEnglish", "ZeusNX User");
+            titleAuthors.Add("CanadianFrench", "ZeusNX User");
+            titleAuthors.Add("LatinAmericanSpanish", "ZeusNX User");
+            titleAuthors.Add("BrazilianPortuguese", "ZeusNX User");
+            titleAuthors.Add("Japanese", "ZeusNX User");
+            titleAuthors.Add("SimplifiedChinese", "ZeusNX User");
+            titleAuthors.Add("TraditionalChinese", "ZeusNX User");
+            titleAuthors.Add("Korean", "ZeusNX User");
+            titleAuthors.Add("BritishEnglish", "ZeusNX User");
+            titleAuthors.Add("French", "ZeusNX User");
+            titleAuthors.Add("German", "ZeusNX User");
+            titleAuthors.Add("Spanish", "ZeusNX User");
+            titleAuthors.Add("Italian", "ZeusNX User");
+            titleAuthors.Add("Dutch", "ZeusNX User");
+            titleAuthors.Add("Portuguese", "ZeusNX User");
+            titleAuthors.Add("Russian", "ZeusNX User");
+
+            //init everything using first lang
+            currentLang.Text = langNames["AmericanEnglish"];
+            gameico.Source = new Bitmap(icoPaths["AmericanEnglish"]);
+            gamesplash.Source = new Bitmap("Runners\\shared\\splash_default.png");
+            titlename.Text = titleNames["AmericanEnglish"];
+            titleauthor.Text = titleAuthors["AmericanEnglish"];
+        }
+
+        private void OnNextLangClicked(object sender, RoutedEventArgs e)
+        {
+            //save everything (icon is saved on select)
+            saveLang();
+            langIndex = (langIndex + 1) % languages.Count;
+            updateUI();
+        }
+
+        private void OnPrevLangClicked(object sender, RoutedEventArgs e)
+        {
+            saveLang();
+            langIndex = (langIndex - 1 + languages.Count) % languages.Count;
+            updateUI();
+        }
+
+        private void saveLang()
+        {
+            string curlang = languages[langIndex];
+            titleNames[curlang] = titlename.Text == null ? string.Empty : titlename.Text;
+            titleAuthors[curlang] = titleauthor.Text == null ? string.Empty : titleauthor.Text;
+        }
+
+        private void updateUI()
+        {
+            List<string> selectedLangs = getSelectedLanguages();
+            string curlang = languages[langIndex];
+            currentLang.Text = langNames[curlang];
+            titlename.Text = titleNames[curlang];
+            titleauthor.Text = titleAuthors[curlang];
+            gameico.Source = new Bitmap(icoPaths[curlang]);
+            langStatusText.IsVisible = !selectedLangs.Contains(curlang);
+        }
+
+        public void onLangCheck(object sender, RoutedEventArgs e)
+        {
+            List<string> selectedLangs = getSelectedLanguages();
+            string curlang = languages[langIndex];
+            langStatusText.IsVisible = !selectedLangs.Contains(curlang);
         }
 
         private void OnRefreshRuntimesClicked(object sender, RoutedEventArgs e)
@@ -199,7 +341,9 @@ namespace ZeusNX
                         var bitmap = new Bitmap(stream);
                         if (bitmap.PixelSize.Width == 256 && bitmap.PixelSize.Height == 256)
                         {
+                            string curlang = languages[langIndex];
                             gameico.Source = bitmap;
+                            icoPaths[curlang] = filePath;
                             trace("INFO", $"Icon loaded: {filePath}");
                         }
                         else
@@ -297,15 +441,15 @@ namespace ZeusNX
                 (poCheck, "Portuguese"),
                 (ruCheck, "Russian")
             };
-            List<string> languages = new List<string>();
+            List<string> lang = new List<string>();
             foreach (var (box, language) in languageChecks)
             {
                 if (box.IsChecked == true)
                 {
-                    languages.Add(language);
+                    lang.Add(language);
                 }
             }
-            return languages;
+            return lang;
         }
 
         private void OnCleanClicked(object sender, RoutedEventArgs e)
@@ -315,6 +459,7 @@ namespace ZeusNX
 
         public async void BuildNSP(object sender, RoutedEventArgs e)
         {
+            saveLang();
             buildnsp.IsEnabled = false;
             //TODO uhhh add detection for pre 2.3 projects and pre 2024 projects, formats for the options_switch.yy is different
             //support latest mainline release (2024.14.3.260) and latest lts (2022.0.3.99) on release, MAYBE beta for that one undertale thing. leave nocturnus alone since that's internal yoyogames shit
@@ -322,8 +467,6 @@ namespace ZeusNX
             //start by checking if shit is filled out
             var projPath = projpath.Text;
             var titleID = titleid.Text == null ? null : titleid.Text.ToLower();
-            var titleName = titlename.Text == null ? "ZeusNX Application" : titlename.Text;
-            var titleAuthor = titleauthor.Text == null ? "ZeusNX User" : titleauthor.Text;
             var titleVer = titleversion.Text == null ? "0.0.0" : titleversion.Text;
             var projConfig = projconf.Text == null ? "Default" : projconf.Text;
             var keyPath = keypath.Text;
@@ -351,6 +494,7 @@ namespace ZeusNX
             }
             string[] tempStr = projPath.Split('\\');
             string projDir = projPath.Replace("\\" + tempStr[tempStr.Length - 1], "");
+            string projName = tempStr[tempStr.Length - 1].Replace(".yyp", "");
             var selectedRuntime = runtimesel.SelectedItem as string;
             var branch = selectedRuntime?.Split('|')[1].Trim();
             selectedRuntime = selectedRuntime?.Split('|')[0].Trim();
@@ -383,7 +527,7 @@ namespace ZeusNX
                     temp += "." + versionString.Split('.')[1];
                     string temp2 = selectedRuntime.Split(".")[0];
                     temp2 += "." + selectedRuntime.Split(".")[1];
-                    temp2.Replace("runtime-", "").Trim();
+                    temp2 = temp2.Replace("runtime-", string.Empty);
                     if (temp != temp2)
                     {
                         if (!temp2.Contains("2024") && temp.Contains("2024"))
@@ -457,7 +601,7 @@ namespace ZeusNX
             time = time.Replace(" ", "");
             time = time.Replace(":", ".");
             time = time.Replace("-", ".");
-            var buildDir = $"{titleName}_build{time}";
+            var buildDir = $"{projName}_build{time}";
             if (!Directory.Exists(buildDir) || !Directory.EnumerateFileSystemEntries(buildDir).Any())
             {
                 Directory.CreateDirectory(buildDir);
@@ -518,28 +662,29 @@ namespace ZeusNX
                     //default for now, we're gonna add some stuff later for it
                     YYOptions2024 options = new YYOptions2024
                     {
-                        option_switch_allow_debug_output = false,
-                        option_switch_enable_fileaccess_checking = false,
-                        option_switch_interpolate_pixels = true,
+                        option_switch_allow_debug_output = debugCheck.IsChecked == true ? true : false,
+                        option_switch_enable_fileaccess_checking = fileaccessCheck.IsChecked == true ? true : false,
+                        option_switch_interpolate_pixels = interpolateCheck.IsChecked == true ? true : false,
                         option_switch_project_nmeta = $"{projDir}\\options\\switch\\application.nmeta", //default path, honestly this is supposed to NOT be used since NintendoSDK is kinda GULP behind locked doors. we're using other stuff for nsp metadata anyways.
-                        option_switch_scale = 0, //0 is keep aspect ration, 1 is full scale.
+                        option_switch_scale = scaleCheck.IsChecked == true ? 0 : 1, //0 is keep aspect ration, 1 is full scale.
                         option_switch_splash_screen = $"{projDir}\\options\\switch\\splash.png", //if one is used i guess, but that kinda ignores our own toggle. think about it melia.
-                        option_switch_texture_page = "2048x2048", //there's only 7 options i'll deal with that in the project settings tab
+                        option_switch_texture_page = texturesizesel.SelectedItem.ToString(), //there's only 7 options i'll deal with that in the project settings tab
                         option_switch_use_splash = splashCheck.IsChecked == true ? true : false //i s'pose
                     };
                     File.WriteAllText($"{projDir}\\options\\switch\\options_switch.yy", JsonConvert.SerializeObject(options, Formatting.Indented));
                 }
                 else
                 {
+                    //add a case for yyp checking here, gonna need to be EVIL about it
                     YYOptionsLTS options = new YYOptionsLTS
                     {
-                        option_switch_allow_debug_output = false,
-                        option_switch_enable_fileaccess_checking = false,
-                        option_switch_interpolate_pixels = true,
+                        option_switch_allow_debug_output = debugCheck.IsChecked == true ? true : false,
+                        option_switch_enable_fileaccess_checking = fileaccessCheck.IsChecked == true ? true : false,
+                        option_switch_interpolate_pixels = interpolateCheck.IsChecked == true ? true : false,
                         option_switch_project_nmeta = $"{projDir}\\options\\switch\\application.nmeta", //default path, honestly this is supposed to NOT be used since NintendoSDK is kinda GULP behind locked doors. we're using other stuff for nsp metadata anyways.
-                        option_switch_scale = 0, //0 is keep aspect ration, 1 is full scale.
+                        option_switch_scale = scaleCheck.IsChecked == true ? 0 : 1, //0 is keep aspect ration, 1 is full scale.
                         option_switch_splash_screen = $"{projDir}\\options\\switch\\splash.png", //if one is used i guess, but that kinda ignores our own toggle. think about it melia.
-                        option_switch_texture_page = "2048x2048", //there's only 7 options i'll deal with that in the project settings tab
+                        option_switch_texture_page = texturesizesel.SelectedItem.ToString(), //there's only 7 options i'll deal with that in the project settings tab
                         option_switch_use_splash = splashCheck.IsChecked == true ? true : false //i s'pose
                     };
                     File.WriteAllText($"{projDir}\\options\\switch\\options_switch.yy", JsonConvert.SerializeObject(options, Formatting.Indented));
@@ -547,7 +692,7 @@ namespace ZeusNX
             }
 
             trace("INFO", "Preprocessing GMS2 project...");
-            string AssetCompilerARG = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{titleName}\" /td=\"{buildDir}\\tmp\" /cd=\"{buildDir}\\cache\" /rtp=\"{runtimePath}\" /ffe=\"eXpvfGtxgjeDg202c3h+b3Z2c31veH1vNnh/dnZzfXI2dnlxc3hpfX15Nn5vfX4=\" /m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /sh=True /nodnd /cfg=\"{projConfig}\" /o=\"{buildDir}\\nsp\\romfs\" /optionsini=\"C:\\Users\\amyme\\Documents\\RussellNX\\runners\\build2024.14.3.260\\romfs\\options.ini\" /baseproject=\"\" \"{projPath}\" /v /preprocess=\"{buildDir}\\cache\"";
+            string AssetCompilerARG = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{projName}\" /td=\"{buildDir}\\tmp\" /cd=\"{buildDir}\\cache\" /rtp=\"{runtimePath}\" /ffe=\"eXpvfGtxgjeDg202c3h+b3Z2c31veH1vNnh/dnZzfXI2dnlxc3hpfX15Nn5vfX4=\" /m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /sh=True /nodnd /cfg=\"{projConfig}\" /o=\"{buildDir}\\nsp\\romfs\" /optionsini=\"C:\\Users\\amyme\\Documents\\RussellNX\\runners\\build2024.14.3.260\\romfs\\options.ini\" /baseproject=\"\" \"{projPath}\" /v /preprocess=\"{buildDir}\\cache\"";
 
             trace("INFO", $"GMAC ARGS: {AssetCompilerARG}");
             await Task.Run(() =>
@@ -583,7 +728,7 @@ namespace ZeusNX
                }
             });
             trace("INFO", "Compiling GMS2 project...");
-            AssetCompilerARG = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{titleName}\" /td=\"{buildDir}\tmp\" /cd=\"{buildDir}\\cache\" /rtp=\"{runtimePath}\" /ffe=\"eXpvfGtxgjeDg202c3h+b3Z2c31veH1vNnh/dnZzfXI2dnlxc3hpfX15Nn5vfX4=\" /m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /sh=True /nodnd /cfg=\"{projConfig}\" /o=\"{buildDir}\\nsp\\romfs\" /optionsini=\"\" /baseproject=\"\" \"{projPath}\" /v";
+            AssetCompilerARG = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{projName}\" /td=\"{buildDir}\tmp\" /cd=\"{buildDir}\\cache\" /rtp=\"{runtimePath}\" /ffe=\"eXpvfGtxgjeDg202c3h+b3Z2c31veH1vNnh/dnZzfXI2dnlxc3hpfX15Nn5vfX4=\" /m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /sh=True /nodnd /cfg=\"{projConfig}\" /o=\"{buildDir}\\nsp\\romfs\" /optionsini=\"\" /baseproject=\"\" \"{projPath}\" /v";
             await Task.Run(() =>
             {
                 ProcessStartInfo psi = new ProcessStartInfo
@@ -619,23 +764,13 @@ namespace ZeusNX
 
             //now starts the fun part, copy over selected icon
             //TODO: add language support
-            if (gameico.Source != null)
+            trace("INFO", "Copying over icon(s)...");
+            foreach (var lang in selLanguages)
             {
-                trace("INFO", "Copying over icon(s)...");
-                Directory.CreateDirectory($"{buildDir}\\tmp\\control");
-                foreach (var lang in selLanguages)
-                {
-                    Bitmap bitmap;
-                    if (sameicoCheck.IsChecked == true)
-                        bitmap = gameico.Source as Bitmap;
-                    else
-                        bitmap = gameico.Source as Bitmap;
-                    bitmap.Save($"{buildDir}\\tmp\\control\\icon_{lang}.png", 90);
-                    bitmap.Dispose();
-
-                    using (cImage png = cImage.FromFile($"{buildDir}\\tmp\\control\\icon_{lang}.png"))
-                        png.Save($"{buildDir}\\nsp\\control\\icon_{lang}.dat", ImageFormat.Jpeg);
-                }
+                if (sameicoCheck.IsChecked == true)
+                    File.Copy(icoPaths["AmericanEnglish"], $"{buildDir}\\nsp\\control\\icon_{lang}.dat", true);
+                else
+                    File.Copy(icoPaths[lang], $"{buildDir}\\nsp\\control\\icon_{lang}.dat", true);
             }
 
             //copy over splash if toggle is set
@@ -657,8 +792,8 @@ namespace ZeusNX
                 langList.Add(new Title
                 {
                     Language = language,
-                    Name = titleName,
-                    Publisher = titleAuthor
+                    Name = titleNames[language],
+                    Publisher = titleAuthors[language]
                 });
             }
             Application nacpXML = new Application
@@ -666,8 +801,8 @@ namespace ZeusNX
                 Title = langList,
                 StartupUserAccount = preselecteduserCheck.IsChecked == true ? "Required" : "None",
                 SupportedLanguage = selLanguages,
-                Screenshot = "Allow",
-                VideoCapture = "Enable",
+                Screenshot = screenshotCheck.IsChecked == true ? "Allow" : "Deny",
+                VideoCapture = recordCheck.IsChecked == true ? "Enable" : "Disable",
                 PresenceGroupId = $"0x{titleID}",
                 DisplayVersion = titleVer,
                 SaveDataOwnerId = $"0x{titleID}",
@@ -718,7 +853,7 @@ namespace ZeusNX
             string hpArgs = $"-k \"{keyPath}\" --tempdir \"{buildDir}\\hactmp\" --backupdir \"{buildDir}\\cache\" --ncadir \"{buildDir}\\cache\\nca\" --nspdir \"{buildDir}\" --exefsdir \"{buildDir}\\nsp\\exefs\" --controldir \"{buildDir}\\nsp\\control\" --logodir \"{buildDir}\\nsp\\logo\" --romfsdir \"{buildDir}\\nsp\\romfs\"";
             //if (offlineManualPath.Text != null && offlineManualPath.Text != string.Empty)
             //    hpArgs += $" --htmldocdir \"{offlineManualPath.Text}\"";
-            hpArgs += $" --titleid \"{titleID}\" --titlename \"{titleName}\" --titlepublisher \"{titleAuthor}\"";
+            hpArgs += $" --titleid \"{titleID}\"";
             await Task.Run(() =>
             {
                 ProcessStartInfo psi = new ProcessStartInfo
