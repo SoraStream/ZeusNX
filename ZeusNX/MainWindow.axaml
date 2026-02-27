@@ -92,6 +92,10 @@
 						</Grid>
 
 						<TextBlock Text="Quick options:" FontWeight="Bold" Margin="0,5,0,0"/>
+						<StackPanel Orientation="Horizontal" Spacing="5" Margin="0,5,0,0">
+							<Button Content="Save Metadata" Click="SaveMetadata" HorizontalAlignment="Stretch"/>
+							<Button Content="Load Metadata" Click="LoadMetadata" HorizontalAlignment="Stretch"/>
+						</StackPanel>
 						<CheckBox Name="existingoptionsCheck" Content="Use existing optionsswitch.yy?"/>
 					</StackPanel>
 
@@ -115,7 +119,7 @@
 						<TextBox Name="titleversion" MaxLength="15" Watermark="0.0.0"/>
 
 						<TextBlock Text="Configuration name:"/>
-						<TextBox Name="projconf" Watermark="Default"/>
+						<TextBox Name="projconf" Watermark="Default" Text="Default"/>
 
 						<TextBlock Text="Keys file:"/>
 						<Grid ColumnDefinitions="*, 40">
@@ -135,15 +139,7 @@
 						<CheckBox Name="interpolateCheck" Content="Interpolate colors between pixels?"/>
 						<CheckBox Name="scaleCheck" Content="Keep aspect ratio?"/>
 						<TextBlock Text="Texture Page Size:"/>
-						<ComboBox Name="texturesizesel" Width="200" SelectedIndex="3">
-							<ComboBoxItem>256x256</ComboBoxItem>
-							<ComboBoxItem>512x512</ComboBoxItem>
-							<ComboBoxItem>1024x1024</ComboBoxItem>
-							<ComboBoxItem>2048x2048</ComboBoxItem>
-							<ComboBoxItem>4096x4096</ComboBoxItem>
-							<ComboBoxItem>8192x8192</ComboBoxItem>
-							<ComboBoxItem>16384x16384</ComboBoxItem>
-						</ComboBox>
+						<ComboBox Name="texturesizesel" Width="200" SelectedIndex="3" />
 						<CheckBox Name="splashCheck" Content="Enable Splash Screen?"/>
 					</StackPanel>
 					<StackPanel Grid.Column="1" Spacing="10" Margin="10">
