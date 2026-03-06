@@ -23,7 +23,7 @@ namespace ZeusNX
 {
     public partial class MainWindow : Window
     {
-        private string ZeusNXVersion = "1.0.0RC1";
+        private string ZeusNXVersion = "1.0.0RC2";
         private int langIndex = 0;
         public string compilerPath = "\\bin\\assetcompiler\\windows\\x64"; //append to runtime path.
         public List<string> languages = new List<string> { "AmericanEnglish",
