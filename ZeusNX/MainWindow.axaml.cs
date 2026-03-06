@@ -3,20 +3,21 @@ using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Newtonsoft.Json;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using ZeusNX.Ini;
-using ZeusNX.YYOptions;
-using ZeusNX.NMeta;
-using ZeusNX.Metadata;
 using System.Xml.Serialization;
-using Newtonsoft.Json.Linq;
+using ZeusNX.Ini;
+using ZeusNX.Metadata;
+using ZeusNX.NMeta;
+using ZeusNX.YYOptions;
 
 namespace ZeusNX
 {
@@ -579,8 +580,9 @@ namespace ZeusNX
 
         public async void BuildNSP(object sender, RoutedEventArgs e)
         {
+            bool failed = false;
             try
-            {
+            {            
                 saveLang();
                 buildnsp.IsEnabled = false;
                 //TODO uhhh add detection for pre 2.3 projects and pre 2024 projects, formats for the options_switch.yy is different
@@ -597,20 +599,26 @@ namespace ZeusNX
                 if (keyPath == null || !keyPath.Contains(".keys"))
                 {
                     trace("ERROR", "Keys not found!!!");
+                    failed = true;
                     return;
                 }
                 if (projPath == null || !projPath.Contains(".yyp"))
                 {
                     trace("ERROR", "Invalid project file!");
+                    failed = true;
                     return;
                 }
                 if (selLanguages.Count == 0)
                 {
                     trace("ERROR", "At least one language needs to be selected!");
+                    failed = true;
                     return;
                 }
                 if (!verifyTitleID(titleID))
+                {
+                    failed = true;
                     return;
+                }
 
                 string[] tempStr = projPath.Split('\\');
                 string projDir = projPath.Replace("\\" + tempStr[tempStr.Length - 1], "");
@@ -624,12 +632,14 @@ namespace ZeusNX
                 if (!Directory.Exists(runtimePath))
                 {
                     trace("ERROR", $"{selectedRuntime} not found. do you have the runtime installed?");
+                    failed = false;
                     return;
                 }
                 //check if associated ZeusNX runtime is here, otherwise halt you kinda need those to make a build
                 if (!Directory.Exists($"Runners\\{selectedRuntime}"))
                 {
                     trace("ERROR", $"{selectedRuntime} files not found! Either follow the guide or check the Github repo to make sure you have it.");
+                    failed = true;
                     return;
                 }
 
@@ -651,11 +661,13 @@ namespace ZeusNX
                         if (!temp2.Contains("2024") && temp.Contains("2024"))
                         {
                             trace("ERROR", "Trying to build a 2024 project with a pre-2024 runtime will NOT work!");
+                            failed = true;
                             return;
                         }
                         else if (temp2.Contains("2024") && !temp.Contains("2024"))
                         {
                             trace("ERROR", "Trying to build a pre-2024 project with a 2024 runtime will NOT work!");
+                            failed = true;
                             return;
                         }
                         else
@@ -702,7 +714,10 @@ namespace ZeusNX
                 File.Copy($"{runtimePath}{compilerPath}\\GMAssetCompiler.dll", $"{runtimePath}{compilerPath}\\GMAssetCompiler.bak");
                 File.Delete($"{runtimePath}{compilerPath}\\GMAssetCompiler.dll");
                 if (!await runExternalTool("Tools\\xdelta.exe", $"-d -s \"{runtimePath}{compilerPath}\\GMAssetCompiler.bak\" \"Runners\\patches\\{selectedRuntime}.xdelta\" \"{runtimePath}{compilerPath}\\GMAssetCompiler.dll\"", "XDELTA"))
+                {
+                    failed = true;
                     return;
+                }
                 await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
 
                 //make temp directories and everything
@@ -726,13 +741,13 @@ namespace ZeusNX
                 else
                 {
                     trace("ERROR", $"{buildDir} has data inside!!");
+                    failed = true;
                     return;
                 }
                 //copy runtime files to exefs / control
                 trace("INFO", "Copying runtime files...");
                 CopyDirectory($"Runners\\{selectedRuntime}\\bin", $"{buildDir}\\nsp\\exefs", true);
                 CopyDirectory($"Runners\\shared\\logo", $"{buildDir}\\nsp\\logo", true);
-                //CopyDirectory($"Runners\\{selectedRuntime}\\romfs", $"{buildDir}\\nsp\\romfs", true);
 
                 //generate options.ini out of thin air
                 var optionsINI = new IniFile();
@@ -803,12 +818,18 @@ namespace ZeusNX
 
                 trace("INFO", "Preprocessing GMS2 project...");
                 if (!await runCompiler(runtimePath, projPath, projName, buildDir, projConfig, true))
+                {
+                    failed = true;
                     return;
+                }
                 await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
 
                 trace("INFO", "Compiling GMS2 project...");
                 if (!await runCompiler(runtimePath, projPath, projName, buildDir, projConfig, false))
+                {
+                    failed = true;
                     return;
+                }
                 await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
 
                 //now starts the fun part, copy over selected icon
@@ -864,7 +885,10 @@ namespace ZeusNX
 
                 string hptnacpArgs = $"-i \"{buildDir}\\tmp\\control.xml\" -o \"{buildDir}\\nsp\\control\\control.nacp\" -a createnacp";
                 if (!await runExternalTool("Tools\\hptnacp.exe", hptnacpArgs, "HPTNACP"))
+                {
+                    failed = true;
                     return;
+                }
                 await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
 
                 //pack nsp
@@ -874,7 +898,10 @@ namespace ZeusNX
                 //    hpArgs += $" --htmldocdir \"{offlineManualPath.Text}\"";
                 hpArgs += $" --titleid \"{titleID}\"";
                 if (!await runExternalTool("Tools\\hacbrewpack.exe", hpArgs, "HBP"))
+                {
+                    failed = true;
                     return;
+                }
                 await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
 
                 //cleanup
@@ -897,6 +924,8 @@ namespace ZeusNX
             }
             finally
             {
+                if (failed)
+                    trace("ERROR", $"Build Failed!");
                 buildnsp.IsEnabled = true;
             }
         }
@@ -931,10 +960,11 @@ namespace ZeusNX
 
         private async Task<bool> runCompiler(string runtimePath, string projPath, string projName, string buildDir, string config, bool isPreprocess)
         {
+            string absolutePath = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             string args = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{projName}\" " +
                           $"/td=\"{buildDir}\\tmp\" /cd=\"{buildDir}\\cache\" /rtp=\"{runtimePath}\" " +
                           $"/m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /cfg=\"{config}\" " +
-                          $"/o=\"{buildDir}\\nsp\\romfs\" \"{projPath}\" ";
+                          $"/o=\"{absolutePath}\\{buildDir}\\nsp\\romfs\" \"{projPath}\" ";
 
             trace("INFO", $"GMAC ARGS: {args}");
             trace("DEBUG", $"runCompiler args, runtimePath-{runtimePath}, projPath-{projPath}, projName-{projName}, config-{config}, isPreprocess-{(isPreprocess ? "true" : "false")}");
