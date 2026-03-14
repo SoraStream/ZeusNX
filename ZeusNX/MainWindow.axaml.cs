@@ -23,7 +23,7 @@ namespace ZeusNX
 {
     public partial class MainWindow : Window
     {
-        private string ZeusNXVersion = "1.0.0RC2";
+        private string ZeusNXVersion = "1.0.0RC3 ";
         private int langIndex = 0;
         public string compilerPath = "\\bin\\assetcompiler\\windows\\x64"; //append to runtime path.
         public List<string> languages = new List<string> { "AmericanEnglish",
@@ -960,7 +960,7 @@ namespace ZeusNX
 
         private async Task<bool> runCompiler(string runtimePath, string projPath, string projName, string buildDir, string config, bool isPreprocess)
         {
-            string absolutePath = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string absolutePath = Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory); //System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             string args = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{projName}\" " +
                           $"/td=\"{buildDir}\\tmp\" /cd=\"{buildDir}\\cache\" /rtp=\"{runtimePath}\" " +
                           $"/m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /cfg=\"{config}\" " +
