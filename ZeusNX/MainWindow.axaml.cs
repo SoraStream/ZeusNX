@@ -25,6 +25,7 @@ namespace ZeusNX
     {
         private string ZeusNXVersion = "1.0.0RC3 ";
         private int langIndex = 0;
+        public bool enablePrefab = false;
         public string compilerPath = "\\bin\\assetcompiler\\windows\\x64"; //append to runtime path.
         public List<string> languages = new List<string> { "AmericanEnglish",
                                                            "CanadianFrench",
@@ -673,6 +674,15 @@ namespace ZeusNX
                         else
                             trace("WARN", "Project versions don't match, there may be dragons!");
                     }
+
+                    //check if we need to set a prefab check or not, thanks 2024.14.
+                    if (temp2.Contains("2024.14"))
+                    {
+                        trace("INFO", "2024.14+ project found, enabling prefab flag...");
+                        enablePrefab = true;
+                    }
+                    else
+                        enablePrefab = false;
                 }
 
                 //if the project is less than 2024 we'll add a thing for options_switch.yy, options were still in the yyp until 2023.11 i think
@@ -961,13 +971,13 @@ namespace ZeusNX
         private async Task<bool> runCompiler(string runtimePath, string projPath, string projName, string buildDir, string config, bool isPreprocess)
         {
             string absolutePath = Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory); //System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string args = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{projName}\" " +
-                          $"/td=\"{buildDir}\\tmp\" /cd=\"{buildDir}\\cache\" /rtp=\"{runtimePath}\" " +
-                          $"/m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /cfg=\"{config}\" " +
-                          $"/o=\"{absolutePath}\\{buildDir}\\nsp\\romfs\" \"{projPath}\" ";
+            string args = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{projName}\" /td=\"{buildDir}\\tmp\" /cd=\"{buildDir}\\cache\" /rtp=\"{runtimePath}\" ";
+            if (enablePrefab)
+                args += "/prefabs=\"C:\\ProgramData\\GameMakerStudio2\\Prefabs\" ";
+            args += $"/m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /cfg=\"{config}\" /o=\"{absolutePath}\\{buildDir}\\nsp\\romfs\" \"{projPath}\" ";
 
             trace("INFO", $"GMAC ARGS: {args}");
-            trace("DEBUG", $"runCompiler args, runtimePath-{runtimePath}, projPath-{projPath}, projName-{projName}, config-{config}, isPreprocess-{(isPreprocess ? "true" : "false")}");
+            //trace("DEBUG", $"runCompiler args, runtimePath-{runtimePath}, projPath-{projPath}, projName-{projName}, config-{config}, isPreprocess-{(isPreprocess ? "true" : "false")}");
 
             if (isPreprocess) args += $"/preprocess=\"{buildDir}\\cache\"";
 
