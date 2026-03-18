@@ -94,6 +94,9 @@ namespace ZeusNX
             try
             {
                 logbox.Text += $"[{type}]: {message}\n";
+                logbox.CaretIndex = logbox.Text.Length;
+                logbox.SelectionStart = logbox.Text.Length;
+                logbox.SelectionEnd = logbox.Text.Length;
             }
             catch (Exception ex)
             {
@@ -474,6 +477,37 @@ namespace ZeusNX
         private void OnCleanClicked(object sender, RoutedEventArgs e)
         {
             logbox.Text = "";
+        }
+        private async void OnExportClicked(object sender, RoutedEventArgs e)
+        {
+            string logContent = logbox.Text;
+
+            if (string.IsNullOrEmpty(logContent))
+            {
+                trace("WARN", "Log is empty.");
+                return;
+            }
+
+            var topLevel = TopLevel.GetTopLevel(this);
+            var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Export ZeusNX Log",
+                SuggestedFileName = $"ZeusNX_Log_{DateTime.Now:yyyyMMdd_HHmmss}",
+                FileTypeChoices = new[] {new FilePickerFileType("Text Files"){Patterns = new[]{"*.txt"}}}
+            });
+
+            if (file != null)
+            {
+                try
+                {
+                    await File.WriteAllTextAsync(file.Path.LocalPath, logContent);
+                    trace("INFO", $"Log exported.");
+                }
+                catch (Exception ex)
+                {
+                    trace("ERROR", $"Failed to export log: {ex.Message}");
+                }
+            }
         }
 
         private async void SaveMetadata(object sender, RoutedEventArgs e)
