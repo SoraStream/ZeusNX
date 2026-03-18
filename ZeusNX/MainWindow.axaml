@@ -107,7 +107,10 @@
 						</Grid>
 
 						<TextBlock Text="Title ID:"/>
-						<TextBox Name="titleid" MaxLength="16" TextChanged="OnTitleIdInput" Watermark="0000000000000000"/>
+						<Grid ColumnDefinitions="*, 90">
+							<TextBox Name="titleid" MaxLength="16" TextChanged="OnTitleIdInput" Watermark="0000000000000000"/>
+							<Button Grid.Column="1" Content="Generate" HorizontalAlignment="Right" Click="OnGenTitleIDClicked"/>
+						</Grid>	
 
 						<TextBlock Text="Name:"/>
 						<TextBox Name="titlename" MaxLength="127" Watermark="GameMaker Runner"/>

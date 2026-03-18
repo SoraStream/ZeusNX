@@ -386,6 +386,22 @@ namespace ZeusNX
             }
         }
 
+        private void OnGenTitleIDClicked(object sender, RoutedEventArgs e)
+        {
+            Random rand = new Random();
+
+            byte[] buffer = new byte[8];
+            rand.NextBytes(buffer);
+            buffer[7] = 0x01;
+            ulong idVal = BitConverter.ToUInt64(buffer, 0);
+            if (idVal < 0x0100000000010000)
+            {
+                idVal |= 0x0100000000010000;
+            }
+            
+            titleid.Text = idVal.ToString("X16");
+        }
+
         private void PopulateRuntimes()
         {
             var runtimes = new List<string>();
