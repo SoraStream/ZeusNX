@@ -782,13 +782,13 @@ namespace ZeusNX
 
                 //make temp directories and everything
                 trace("INFO", "Creating build dir...");
-                var time = DateTime.Now.ToString();
+                /*var time = DateTime.Now.ToString();
                 time = time.Replace(" ", "");
                 time = time.Replace(":", ".");
                 time = time.Replace("-", ".");
                 time = time.Replace("/", ".");
-                time = time.Replace("\\", ".");
-                var buildDir = $"{projName}_build{time}";
+                time = time.Replace("\\", ".");*/
+                var buildDir = $"{projName}_build{DateTime.Now:yyyyMMdd_HHmmss}";
                 if (!Directory.Exists(buildDir) || !Directory.EnumerateFileSystemEntries(buildDir).Any())
                 {
                     Directory.CreateDirectory(buildDir);
@@ -978,6 +978,23 @@ namespace ZeusNX
                     Directory.Delete($"{buildDir}\\cache", true);
                 if (Directory.Exists($"{buildDir}\\nsp"))
                     Directory.Delete($"{buildDir}\\nsp", true);
+                try
+                {
+                    if (Directory.Exists(buildDir))
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = buildDir,
+                            UseShellExecute = true,
+                            Verb = "open"
+                        });
+                        trace("INFO", "Opened build directory.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    trace("ERROR", $"Failed to open build dir: {ex.Message}");
+                }
                 trace("INFO", "Build Complete!");
             }
             catch (Exception ex)

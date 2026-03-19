@@ -3,7 +3,8 @@
         x:Class="ZeusNX.MainWindow"
         Title="ZeusNX"
         Width="1200" Height="700"
-		CanResize="False"
+		MinWidth="1200" MinHeight="700"
+		CanResize="True"
         WindowStartupLocation="CenterScreen">
 
 	<Window.Styles>
@@ -41,7 +42,7 @@
 	</Window.Styles>
 	
 	
-	<Grid RowDefinitions="*, Auto, Auto" Margin="10">
+	<Grid RowDefinitions="Auto, *, Auto" Margin="10">
 		<TabControl Grid.Row="0" Margin="10">
 			<TabItem Header="General">
 				<Grid Grid.Row="0" ColumnDefinitions="250, 30, 350, 30, *" Margin="0,0,0,10">
@@ -179,20 +180,20 @@
 			</TabItem>
 		</TabControl>
 		
-		<StackPanel Grid.Row="1" Margin="0,10,0,0">
-			<TextBlock Text="Log:"/>
+		<DockPanel Grid.Row="1" Margin="0,0,0,0">
+			<TextBlock DockPanel.Dock="Top" Text="Log:"/>
 			<TextBox Name="logbox"
-					 Height="105"
+					 MinHeight="105"
 					 AcceptsReturn="True"
 					 IsReadOnly="True"
 					 FontFamily="Cascadia Code"
 					 FontSize="13"
 					 Background="#0C0C0C"
 					 Foreground="#00FF00"/>
-		</StackPanel>
+		</DockPanel>
 
 		<Grid Grid.Row="2" ColumnDefinitions="Auto, Auto, *, Auto" Margin="0,10,0,0">
-			<Button Grid.Column="0" Content="Export log" Margin="0,0,5,0" Click="OnExportClicked"/>
+			<Button Grid.Column="0" Content="Export log" Margin="0,0,5,0"/>
 			<Button Grid.Column="1" Content="Clean log" Click="OnCleanClicked"/>
 			<Button Name="buildnsp" Grid.Column="3" Content="Build NSP" Padding="20,5" FontWeight="Bold" Click="BuildNSP"/>
 		</Grid>		
