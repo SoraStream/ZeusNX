@@ -786,6 +786,8 @@ namespace ZeusNX
                 time = time.Replace(" ", "");
                 time = time.Replace(":", ".");
                 time = time.Replace("-", ".");
+                time = time.Replace("/", ".");
+                time = time.Replace("\\", ".");
                 var buildDir = $"{projName}_build{time}";
                 if (!Directory.Exists(buildDir) || !Directory.EnumerateFileSystemEntries(buildDir).Any())
                 {
@@ -1024,7 +1026,7 @@ namespace ZeusNX
             string args = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{projName}\" /td=\"{buildDir}\\tmp\" /cd=\"{buildDir}\\cache\" /rtp=\"{runtimePath}\" ";
             if (enablePrefab)
                 args += "/prefabs=\"C:\\ProgramData\\GameMakerStudio2\\Prefabs\" ";
-            args += $"/m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /cfg=\"{config}\" /o=\"{absolutePath}\\{buildDir}\\nsp\\romfs\" \"{projPath}\" ";
+            args += $"/m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /cfg=\"{config}\" /o=\"{absolutePath}{buildDir}\\nsp\\romfs\" \"{projPath}\" ";
 
             trace("INFO", $"GMAC ARGS: {args}");
             //trace("DEBUG", $"runCompiler args, runtimePath-{runtimePath}, projPath-{projPath}, projName-{projName}, config-{config}, isPreprocess-{(isPreprocess ? "true" : "false")}");
