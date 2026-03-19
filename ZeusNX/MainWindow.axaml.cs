@@ -773,7 +773,7 @@ namespace ZeusNX
                 }
                 File.Copy($"{runtimePath}{compilerPath}\\GMAssetCompiler.dll", $"{runtimePath}{compilerPath}\\GMAssetCompiler.bak");
                 File.Delete($"{runtimePath}{compilerPath}\\GMAssetCompiler.dll");
-                if (!await runExternalTool("Tools\\xdelta.exe", $"-d -s \"{runtimePath}{compilerPath}\\GMAssetCompiler.bak\" \"Runners\\patches\\{selectedRuntime}.xdelta\" \"{runtimePath}{compilerPath}\\GMAssetCompiler.dll\"", "XDELTA"))
+                if (await runExternalTool("Tools\\xdelta.exe", $"-d -s \"{runtimePath}{compilerPath}\\GMAssetCompiler.bak\" \"Runners\\patches\\{selectedRuntime}.xdelta\" \"{runtimePath}{compilerPath}\\GMAssetCompiler.dll\"", "XDELTA") != 0)
                 {
                     failed = true;
                     return;
@@ -879,7 +879,7 @@ namespace ZeusNX
                 }
 
                 trace("INFO", "Preprocessing GMS2 project...");
-                if (!await runCompiler(runtimePath, projPath, projName, buildDir, projConfig, true))
+                if (await runCompiler(runtimePath, projPath, projName, buildDir, projConfig, true) != 0)
                 {
                     failed = true;
                     return;
@@ -887,7 +887,7 @@ namespace ZeusNX
                 await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
 
                 trace("INFO", "Compiling GMS2 project...");
-                if (!await runCompiler(runtimePath, projPath, projName, buildDir, projConfig, false))
+                if (await runCompiler(runtimePath, projPath, projName, buildDir, projConfig, false) != 0)
                 {
                     failed = true;
                     return;
@@ -946,7 +946,7 @@ namespace ZeusNX
                     serializer.Serialize(fs, nacpXML);
 
                 string hptnacpArgs = $"-i \"{buildDir}\\tmp\\control.xml\" -o \"{buildDir}\\nsp\\control\\control.nacp\" -a createnacp";
-                if (!await runExternalTool("Tools\\hptnacp.exe", hptnacpArgs, "HPTNACP"))
+                if (await runExternalTool("Tools\\hptnacp.exe", hptnacpArgs, "HPTNACP") != 0)
                 {
                     failed = true;
                     return;
@@ -959,7 +959,7 @@ namespace ZeusNX
                 //if (offlineManualPath.Text != null && offlineManualPath.Text != string.Empty)
                 //    hpArgs += $" --htmldocdir \"{offlineManualPath.Text}\"";
                 hpArgs += $" --titleid \"{titleID}\"";
-                if (!await runExternalTool("Tools\\hacbrewpack.exe", hpArgs, "HBP"))
+                if (await runExternalTool("Tools\\hacbrewpack.exe", hpArgs, "HBP") != 0)
                 {
                     failed = true;
                     return;
@@ -1009,35 +1009,35 @@ namespace ZeusNX
             }
         }
 
-        private async Task<bool> runExternalTool(string fileName, string args, string prefix)
+        private async Task<int> runExternalTool(string fileName, string args, string prefix)
         {
-            var psi = new ProcessStartInfo
+            return await Task.Run(() =>
             {
-                FileName = fileName,
-                Arguments = args,
-                CreateNoWindow = true,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-            using var process = new Process { StartInfo = psi };
-            process.OutputDataReceived += (s, e) => { if (e.Data != null) Dispatcher.UIThread.InvokeAsync(() => trace(prefix, e.Data)); };
-            process.ErrorDataReceived += (s, e) => { if (e.Data != null) Dispatcher.UIThread.InvokeAsync(() => trace($"{prefix}ERR", e.Data)); };
+                var psi = new ProcessStartInfo
+                {
+                    FileName = fileName,
+                    Arguments = args,
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+                using var process = new Process { StartInfo = psi };
+                process.OutputDataReceived += (s, e) => { if (e.Data != null) Dispatcher.UIThread.InvokeAsync(() => trace(prefix, e.Data)); };
+                process.ErrorDataReceived += (s, e) => { if (e.Data != null) Dispatcher.UIThread.InvokeAsync(() => trace($"{prefix}ERR", e.Data)); };
 
-            process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-            await process.WaitForExitAsync();
+                process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+                process.WaitForExit();
 
-            if (process.ExitCode != 0)
-            {
-                trace("ERROR", $"{prefix} failed with exit code {process.ExitCode}");
-                return false;
-            }
-            return true;
+                if (process.ExitCode != 0)
+                    trace("ERROR", $"{prefix} failed with exit code {process.ExitCode}");
+                return process.ExitCode;
+            });
         }
 
-        private async Task<bool> runCompiler(string runtimePath, string projPath, string projName, string buildDir, string config, bool isPreprocess)
+        private async Task<int> runCompiler(string runtimePath, string projPath, string projName, string buildDir, string config, bool isPreprocess)
         {
             string absolutePath = Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory); //System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             string args = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{projName}\" /td=\"{buildDir}\\tmp\" /cd=\"{buildDir}\\cache\" /rtp=\"{runtimePath}\" ";
