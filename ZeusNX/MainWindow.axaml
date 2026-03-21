@@ -173,8 +173,8 @@
 						<CheckBox Name="sameicoCheck" Content="Use same icon across all selected languages?"/>
 						<CheckBox Name="screenshotCheck" Content="Enable Screenshots?" IsChecked="True"/>
 						<CheckBox Name="recordCheck" Content="Enable Video Capture?" IsChecked="True"/>
-						<!--<TextBlock Text="Offline manual path:"/>
-						<TextBox Name="offlineManualPath" Watermark="Leave blank to have none."/>-->
+						<TextBlock Text="Offline manual path:"/>
+						<TextBox IsEnabled="False" Name="offlineManualPath" Watermark="Leave blank to have none."/>
 					</StackPanel>
 				</Grid>
 			</TabItem>
