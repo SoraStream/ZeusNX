@@ -879,7 +879,7 @@ namespace ZeusNX
                 }
 
                 trace("INFO", "Preprocessing GMS2 project...");
-                if (await runCompiler(runtimePath, projPath, projName, buildDir, projConfig, true) <= 2)
+                if (await runCompiler(runtimePath, projPath, projName, buildDir, projConfig, true) >= 2)
                 {
                     failed = true;
                     return;
@@ -887,7 +887,7 @@ namespace ZeusNX
                 await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
 
                 trace("INFO", "Compiling GMS2 project...");
-                if (await runCompiler(runtimePath, projPath, projName, buildDir, projConfig, false) <= 2)
+                if (await runCompiler(runtimePath, projPath, projName, buildDir, projConfig, false) >= 2)
                 {
                     failed = true;
                     return;
