@@ -23,7 +23,7 @@ namespace ZeusNX
 {
     public partial class MainWindow : Window
     {
-        private string ZeusNXVersion = "1.0.0RC4";
+        private string ZeusNXVersion = "1.0.0RC5";
         private int langIndex = 0;
         public bool enablePrefab = false;
         public string compilerPath = "\\bin\\assetcompiler\\windows\\x64"; //append to runtime path.
