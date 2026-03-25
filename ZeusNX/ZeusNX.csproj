@@ -5,7 +5,11 @@
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationIcon>znxico.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup>
+    <Content Include="znxico.ico" />
+  </ItemGroup>
 
   <ItemGroup>
 	  <None Update="Tools\**">
