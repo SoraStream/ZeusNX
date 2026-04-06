@@ -55,6 +55,8 @@ namespace ZeusNX
             InitDict();
             PopulateRuntimes();
             PopulateMetadata();
+            if (metalist.SelectedItem != null)
+                LoadMetadata(null, null);
             trace("INFO", $"Welcome to ZeusNX, Version {ZeusNXVersion}");
         }
 
@@ -109,7 +111,7 @@ namespace ZeusNX
 
         private void PopulateMetadata()
         {
-            metalist.ItemsSource = Directory.GetFiles("Data\\Metadata").Select(Path.GetFileNameWithoutExtension).ToList();
+            metalist.ItemsSource = Directory.GetFiles("Data\\Metadata").Select(f => new FileInfo(f)).OrderByDescending(f => f.LastAccessTime).Select(f => Path.GetFileNameWithoutExtension(f.Name)).ToList();
         }
 
         private void InitDict()

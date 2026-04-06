@@ -47,4 +47,11 @@ namespace ZeusNX.Metadata
         public Dictionary<string, string> TitleAuthors { get; set; }
         public Dictionary<string, string> IconPaths { get; set; }
     }
+
+    internal class YYRuntimeMetadata
+    {
+        public string Version { get; set; }
+        public string Date { get; set; }
+        public string PatchNotes { get; set; }
+    }
 }
