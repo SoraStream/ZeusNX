@@ -23,7 +23,7 @@ namespace ZeusNX
 {
     public partial class MainWindow : Window
     {
-        private string ZeusNXVersion = "1.0.0RC5";
+        private string ZeusNXVersion = "1.0.0RC6";
         private int langIndex = 0;
         public bool enablePrefab = false;
         public string compilerPath = "\\bin\\assetcompiler\\windows\\x64"; //append to runtime path.
@@ -43,6 +43,7 @@ namespace ZeusNX
                                                            "Dutch",
                                                            "Portuguese",
                                                            "Russian"};
+        public string splashPath = "Runners\\shared\\splash_default.png";
         public Dictionary<string, string> langNames = new Dictionary<string, string>();
         public Dictionary<string, string> icoPaths = new Dictionary<string, string>();
         public Dictionary<string, string> titleNames = new Dictionary<string, string>();
@@ -53,6 +54,7 @@ namespace ZeusNX
             InitializeComponent();
             InitDict();
             PopulateRuntimes();
+            PopulateMetadata();
             trace("INFO", $"Welcome to ZeusNX, Version {ZeusNXVersion}");
         }
 
@@ -105,8 +107,17 @@ namespace ZeusNX
 
         }
 
+        private void PopulateMetadata()
+        {
+            metalist.ItemsSource = Directory.GetFiles("Data\\Metadata").Select(Path.GetFileNameWithoutExtension).ToList();
+        }
+
         private void InitDict()
         {
+            Directory.CreateDirectory("Data");
+            Directory.CreateDirectory("Data\\Metadata");
+            Directory.CreateDirectory("Data\\Icons");
+            Directory.CreateDirectory("Data\\Splashes");
             //texture page stuff
             List<string> txtPageList = new List<string> { "256x256", "512x512", "1024x1024", "2048x2048", "4096x4096", "8192x8192", "16384x16384" };
             //lang stuff
@@ -186,6 +197,12 @@ namespace ZeusNX
             titleauthor.Text = titleAuthors["AmericanEnglish"];
             texturesizesel.ItemsSource = txtPageList;
             texturesizesel.SelectedIndex = 3;
+        }
+
+        private void OnOpenDownloaderClicked(object sender, RoutedEventArgs e)
+        {
+            var downloadWin = new DownloadWindow(trace); // Pass the trace function
+            downloadWin.ShowDialog(this);
         }
 
         private void OnNextLangClicked(object sender, RoutedEventArgs e)
@@ -311,6 +328,10 @@ namespace ZeusNX
                     {
                         var bitmap = new Bitmap(stream);
                         gamesplash.Source = bitmap;
+                        string fileName = filePath.Split('\\')[filePath.Split('\\').Length - 1];
+                        if (File.Exists($"Data\\Icons\\{fileName}"))
+                            File.Delete($"Data\\Icons\\{fileName}");
+                        File.Copy(filePath, $"Data\\Icons\\{fileName}");
                         trace("INFO", $"Splash loaded: {filePath}");
                     }
                 }
@@ -356,14 +377,18 @@ namespace ZeusNX
                         {
                             string curlang = languages[langIndex];
                             gameico.Source = bitmap;
-                            icoPaths[curlang] = filePath;
+                            string fileName = filePath.Split('\\')[filePath.Split('\\').Length - 1];
+                            if (File.Exists($"Data\\Icons\\{fileName}"))
+                                File.Delete($"Data\\Icons\\{fileName}");
+                            File.Copy(filePath, $"Data\\Icons\\{fileName}");
+                            icoPaths[curlang] = $"Data\\Icons\\{fileName}";
                             trace("INFO", $"Icon loaded: {filePath}");
                         }
                         else
                         {
                             trace("ERROR", $"Image size is {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}. Must be 256x256!");
-                            bitmap.Dispose();
                         }
+                        bitmap.Dispose();
                     }
                 }
                 catch (Exception ex)
@@ -485,6 +510,7 @@ namespace ZeusNX
         {
             logbox.Text = "";
         }
+
         private async void OnExportClicked(object sender, RoutedEventArgs e)
         {
             string logContent = logbox.Text;
@@ -520,6 +546,11 @@ namespace ZeusNX
         private async void SaveMetadata(object sender, RoutedEventArgs e)
         {
             saveLang();
+            if (projpath.Text == null)
+            {
+                trace("ERROR", "Invalid project path, cannot save metadata!");
+                return;
+            }
             var meta = new ZeusNXMetadata()
             {
                 TitleID = titleid.Text,
@@ -527,6 +558,7 @@ namespace ZeusNX
                 ProjectPath = projpath.Text,
                 KeysPath = keypath.Text,
                 ConfigName = projconf.Text,
+                SplashPath = splashPath,
                 ExistingOptionsCheck = existingoptionsCheck.IsChecked == true,
                 RequireAccount = preselecteduserCheck.IsChecked == true,
                 DebugOutput = debugCheck.IsChecked == true,
@@ -559,80 +591,132 @@ namespace ZeusNX
                 TitleAuthors = titleAuthors,
                 IconPaths = icoPaths
             };
-            var topLevel = TopLevel.GetTopLevel(this);
-            var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-            {
-                Title = "Save ZeusNX Metadata",
-                FileTypeChoices = new[] { new FilePickerFileType("ZeusNX Metadata") { Patterns = new[] { "*.znx" } } }
-            });
+            //var topLevel = TopLevel.GetTopLevel(this);
+            //var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            //{
+            //    Title = "Save ZeusNX Metadata",
+            //    FileTypeChoices = new[] { new FilePickerFileType("ZeusNX Metadata") { Patterns = new[] { "*.znx" } } }
+            //});
 
-            if (file != null)
-            {
-                string json = JsonConvert.SerializeObject(meta, Formatting.Indented);
-                await File.WriteAllTextAsync(file.Path.LocalPath, json);
-                trace("INFO", "Metadata saved successfully.");
+            //if (file != null)
+            //{
+            string json = JsonConvert.SerializeObject(meta, Formatting.Indented);
+            string filePath = $"Data\\Metadata\\{meta.ProjectPath.Split("\\")[meta.ProjectPath.Split("\\").Length - 1].Replace(".yyp", "")}.znx";
+            try
+            {            
+                if (!File.Exists(filePath))
+                    File.Delete(filePath);
+                File.Create(filePath).Close();
+                await File.WriteAllTextAsync(filePath, json);
+                PopulateMetadata();
             }
+            catch (Exception ex)
+            {
+                trace("ERROR", $"Failed to serialize metadata: {ex.Message}");
+                return;
+            }
+            trace("INFO", $"ZNX file saved at {filePath}.");
         }
 
         private async void LoadMetadata(object sender, RoutedEventArgs e)
         {
-            var topLevel = TopLevel.GetTopLevel(this);
-            var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            //var topLevel = TopLevel.GetTopLevel(this);
+            //var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            //{
+            //    Title = "Load ZeusNX Metadata",
+            //    FileTypeFilter = new[] { new FilePickerFileType("ZeusNX Metadata") { Patterns = new[] { "*.znx" } } }
+            //});
+            //if (files.Count > 0)
+            //{
+            if (metalist.ItemsSource == null || metalist.SelectedItem == null)
             {
-                Title = "Load ZeusNX Metadata",
-                FileTypeFilter = new[] { new FilePickerFileType("ZeusNX Metadata") { Patterns = new[] { "*.znx" } } }
-            });
-            if (files.Count > 0)
-            {
-                string json = await File.ReadAllTextAsync(files[0].Path.LocalPath);
-                var meta = JsonConvert.DeserializeObject<ZeusNXMetadata>(json);
+                trace("ERROR", "No metadata file selected!");
+                return;
+            }
 
-                if (meta != null)
+            string filePath = $"Data\\Metadata\\{metalist.SelectedItem}.znx";
+            string json = await File.ReadAllTextAsync(filePath);
+            var meta = JsonConvert.DeserializeObject<ZeusNXMetadata>(json);
+
+            if (meta != null)
+            {
+                // Restore UI
+                titleid.Text = meta.TitleID;
+                titleversion.Text = meta.Version;
+                projpath.Text = meta.ProjectPath;
+                keypath.Text = meta.KeysPath;
+                projconf.Text = meta.ConfigName;
+                preselecteduserCheck.IsChecked = meta.RequireAccount;
+                debugCheck.IsChecked = meta.DebugOutput;
+                interpolateCheck.IsChecked = meta.InterpolatePixels;
+                fileaccessCheck.IsChecked = meta.EnableFileAccessChecking;
+                scaleCheck.IsChecked = meta.Scale;
+                texturesizesel.SelectedIndex = meta.texturePage;
+                splashCheck.IsChecked = meta.UseSplash;
+                sameicoCheck.IsChecked = meta.SameIcons;
+                screenshotCheck.IsChecked = meta.EnableScreenShots;
+                recordCheck.IsChecked = meta.EnableVideoCapture;
+                offlineManualPath.Text = meta.OfflineManualPath;
+
+                //lang
+                aeCheck.IsChecked = meta.AmericanEnglish;
+                cfCheck.IsChecked = meta.CanadianFrench;
+                saCheck.IsChecked = meta.LatinAmericanSpanish;
+                bpCheck.IsChecked = meta.BrazilianPortuguese;
+                jpCheck.IsChecked = meta.Japanese;
+                csCheck.IsChecked = meta.SimplifiedChinese;
+                ctCheck.IsChecked = meta.TraditionalChinese;
+                haCheck.IsChecked = meta.Korean;
+                beCheck.IsChecked = meta.BritishEnglish;
+                frCheck.IsChecked = meta.French;
+                geCheck.IsChecked = meta.German;
+                esCheck.IsChecked = meta.EuropeanSpanish;
+                itCheck.IsChecked = meta.Italian;
+                duCheck.IsChecked = meta.Dutch;
+                poCheck.IsChecked = meta.Portuguese;
+                ruCheck.IsChecked = meta.Russian;
+
+                // Restore Dictionaries
+                titleNames = meta.TitleNames ?? titleNames;
+                titleAuthors = meta.TitleAuthors ?? titleAuthors;
+                icoPaths = meta.IconPaths ?? icoPaths;
+                splashPath = meta.SplashPath ?? "Runners\\shared\\splash_default.png";
+                //load splash
+                try
                 {
-                    // Restore UI
-                    titleid.Text = meta.TitleID;
-                    titleversion.Text = meta.Version;
-                    projpath.Text = meta.ProjectPath;
-                    keypath.Text = meta.KeysPath;
-                    projconf.Text = meta.ConfigName;
-                    preselecteduserCheck.IsChecked = meta.RequireAccount;
-                    debugCheck.IsChecked = meta.DebugOutput;
-                    interpolateCheck.IsChecked = meta.InterpolatePixels;
-                    fileaccessCheck.IsChecked = meta.EnableFileAccessChecking;
-                    scaleCheck.IsChecked = meta.Scale;
-                    texturesizesel.SelectedIndex = meta.texturePage;
-                    splashCheck.IsChecked = meta.UseSplash;
-                    sameicoCheck.IsChecked = meta.SameIcons;
-                    screenshotCheck.IsChecked = meta.EnableScreenShots;
-                    recordCheck.IsChecked = meta.EnableVideoCapture;
-                    offlineManualPath.Text = meta.OfflineManualPath;
-
-                    //lang
-                    aeCheck.IsChecked = meta.AmericanEnglish;
-                    cfCheck.IsChecked = meta.CanadianFrench;
-                    saCheck.IsChecked = meta.LatinAmericanSpanish;
-                    bpCheck.IsChecked = meta.BrazilianPortuguese;
-                    jpCheck.IsChecked = meta.Japanese;
-                    csCheck.IsChecked = meta.SimplifiedChinese;
-                    ctCheck.IsChecked = meta.TraditionalChinese;
-                    haCheck.IsChecked = meta.Korean;
-                    beCheck.IsChecked = meta.BritishEnglish;
-                    frCheck.IsChecked = meta.French;
-                    geCheck.IsChecked = meta.German;
-                    esCheck.IsChecked = meta.EuropeanSpanish;
-                    itCheck.IsChecked = meta.Italian;
-                    duCheck.IsChecked = meta.Dutch;
-                    poCheck.IsChecked = meta.Portuguese;
-                    ruCheck.IsChecked = meta.Russian;
-
-                    // Restore Dictionaries
-                    titleNames = meta.TitleNames ?? titleNames;
-                    titleAuthors = meta.TitleAuthors ?? titleAuthors;
-                    icoPaths = meta.IconPaths ?? icoPaths;
-
-                    updateUI(); // Refresh the display for the current language
-                    trace("INFO", "Metadata loaded successfully.");
+                    gamesplash.Source = new Bitmap(splashPath);
                 }
+                catch (Exception ex)
+                {
+                    trace("ERROR", $"Failed to load splash: {ex.Message}");
+                }
+
+                updateUI(); // Refresh the display for the current language
+                trace("INFO", $"ZNX file loaded from {filePath}.");
+                //}
+            }
+        }
+
+        private async void DeleteMetadata(object sender, RoutedEventArgs e)
+        {
+            string filePath = $"Data\\Metadata\\{metalist.SelectedItem}.znx";
+            if (File.Exists(filePath))
+            {
+                try
+                {
+                    File.Delete(filePath);
+                    trace("INFO", "ZNX file deleted successfully.");
+                    PopulateMetadata();
+                }
+                catch (Exception ex)
+                {
+                    trace("ERROR", $"Failed to delete ZNX file: {ex.Message}");
+                }
+            }
+            else
+            {
+                //this should never actually happen.
+                trace("ERROR", "Selected metadata file does not exist.");
             }
         }
 

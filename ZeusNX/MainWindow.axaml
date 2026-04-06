@@ -91,14 +91,17 @@
 									Click="OnRefreshRuntimesClicked"
 									Margin="5,0,0,0"/>
 						</Grid>
-
+						<Button Content="Download Runtime" Click="OnOpenDownloaderClicked"/>
 						<TextBlock Text="Quick options:" FontWeight="Bold" Margin="0,5,0,0"/>
+						<TextBlock Text="Saved Metadata:" Margin="0,5,0,0"/>
+						<ComboBox Name="metalist" HorizontalAlignment="Stretch" SelectedIndex="0"/>
 						<StackPanel Orientation="Horizontal" Spacing="5" Margin="0,5,0,0">
-							<Button Content="Save Metadata" Click="SaveMetadata" HorizontalAlignment="Stretch"/>
-							<Button Content="Load Metadata" Click="LoadMetadata" HorizontalAlignment="Stretch"/>
+							<Button Content="Save" Click="SaveMetadata" HorizontalAlignment="Stretch"/>
+							<Button Content="Load" Click="LoadMetadata" HorizontalAlignment="Stretch"/>
+							<Button Content="Delete" Click="DeleteMetadata" HorizontalAlignment="Stretch"/>
 						</StackPanel>
 						<CheckBox Name="existingoptionsCheck" Content="Use existing optionsswitch.yy?"/>
-						<!--<Button Content="           Open Offline Manual?          "/>-->
+						<!--<Button Content="           Open Offline Manual?          " Click="testpsw"/>-->
 					</StackPanel>
 
 					<StackPanel Grid.Column="4" Spacing="5">
@@ -138,7 +141,7 @@
 				<Grid ColumnDefinitions="250, 250, 250, *" Margin="10">
 					<StackPanel Grid.Column="0" Spacing="10" Margin="10">
 						<TextBlock Text="GMS2 Project Settings:" FontWeight="Bold"/>
-						<CheckBox Name="preselecteduserCheck" Content="Require account on startup?"/>
+						<CheckBox Name="preselecteduserCheck" Content="Require account on startup?" IsChecked="True" />
 						<CheckBox Name="debugCheck" Content="Enable debug output?"/>
 						<CheckBox Name="fileaccessCheck" Content="Enable file access logging to SD card?"/>
 						<CheckBox Name="interpolateCheck" Content="Interpolate colors between pixels?"/>

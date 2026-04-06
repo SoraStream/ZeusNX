@@ -33,4 +33,10 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="System.Drawing.Common" Version="10.0.3" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="DownloadWindow.axaml.cs">
+      <DependentUpon>DownloadWindow.axaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
 </Project>
