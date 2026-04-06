@@ -98,6 +98,7 @@
 							<Button Content="Load Metadata" Click="LoadMetadata" HorizontalAlignment="Stretch"/>
 						</StackPanel>
 						<CheckBox Name="existingoptionsCheck" Content="Use existing optionsswitch.yy?"/>
+						<!--<Button Content="           Open Offline Manual?          "/>-->
 					</StackPanel>
 
 					<StackPanel Grid.Column="4" Spacing="5">
