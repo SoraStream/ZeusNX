@@ -644,7 +644,7 @@ namespace ZeusNX
                 saveLang();
                 buildnsp.IsEnabled = false;
                 //TODO uhhh add detection for pre 2.3 projects and pre 2024 projects, formats for the options_switch.yy is different
-                //support latest mainline release (2024.14.3.260) and latest lts (2022.0.3.99) on release, MAYBE beta for that one undertale thing. leave nocturnus alone since that's internal yoyogames shit
+                //support latest mainline release (2024.14.4.286) and latest lts (2022.0.3.99) on release, MAYBE beta for that one undertale thing. leave nocturnus alone since that's internal yoyogames shit
                 trace("INFO", "Build START!");
                 //start by checking if shit is filled out
                 var projPath = projpath.Text;
@@ -710,13 +710,15 @@ namespace ZeusNX
                 {
                     string versionString = yymetaData["IDEVersion"].ToString();
                     string temp = versionString.Split('.')[0];
-                    temp += "." + versionString.Split('.')[1];
+                    temp += "." + versionString.Split('.')[1] + "." + versionString.Split('.')[2];
                     string temp2 = selectedRuntime.Split(".")[0];
-                    temp2 += "." + selectedRuntime.Split(".")[1];
+                    temp2 += "." + selectedRuntime.Split(".")[1] + "." + selectedRuntime.Split('.')[2];
                     temp2 = temp2.Replace("runtime-", string.Empty);
                     if (temp != temp2)
                     {
-                        if (!temp2.Contains("2024") && temp.Contains("2024"))
+                        if (temp == "2024.14.3" && temp2 == "2024.14.4")
+                            trace("WARN", "2024.14.3 with a 2024.14.4 runtime found, this will MOST LIKELY FAIL. Update your project with the IDE!");
+                        else if (!temp2.Contains("2024") && temp.Contains("2024"))
                         {
                             trace("ERROR", "Trying to build a 2024 project with a pre-2024 runtime will NOT work!");
                             failed = true;
@@ -780,7 +782,7 @@ namespace ZeusNX
                 }
                 File.Copy($"{runtimePath}{compilerPath}\\GMAssetCompiler.dll", $"{runtimePath}{compilerPath}\\GMAssetCompiler.bak");
                 File.Delete($"{runtimePath}{compilerPath}\\GMAssetCompiler.dll");
-                if (await runExternalTool("Tools\\xdelta.exe", $"-d -s \"{runtimePath}{compilerPath}\\GMAssetCompiler.bak\" \"Runners\\patches\\{selectedRuntime}.xdelta\" \"{runtimePath}{compilerPath}\\GMAssetCompiler.dll\"", "XDELTA") != 0)
+                if (await runExternalTool("Tools\\xdelta.exe", $"-d -s \"{runtimePath}{compilerPath}\\GMAssetCompiler.bak\" \"Runners\\{selectedRuntime}\\{selectedRuntime}.xdelta\" \"{runtimePath}{compilerPath}\\GMAssetCompiler.dll\"", "XDELTA") != 0)
                 {
                     failed = true;
                     return;
