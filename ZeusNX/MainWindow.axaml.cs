@@ -217,7 +217,14 @@ namespace ZeusNX
             currentLang.Text = langNames[curlang];
             titlename.Text = titleNames[curlang];
             titleauthor.Text = titleAuthors[curlang];
-            gameico.Source = new Bitmap(icoPaths[curlang]);
+            try
+            {
+                gameico.Source = new Bitmap(icoPaths[curlang]);
+            }
+            catch (Exception ex)
+            {
+                trace("ERROR", $"Failed to load icon for {curlang}: {ex.Message}");
+            }
             langStatusText.IsVisible = !selectedLangs.Contains(curlang);
         }
 
