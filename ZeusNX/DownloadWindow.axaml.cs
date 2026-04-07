@@ -80,6 +80,8 @@ public partial class DownloadWindow : Window
                 string title = item["title"]?.InnerText.Replace("Version ", "");
                 //if it's below 2022, don't even bother rn.
                 if (title.Split('.')[0] == "2") continue;
+                //blacklist 2022.3 and lower since that uses an older build system, and i haven't researched how to patch that yet
+                if (Double.Parse($"{title.Split('.')[0]}.{title.Split('.')[1]}") <= 2022.4 && Double.Parse($"{title.Split('.')[0]}.{title.Split('.')[1]}") != 2022.11 && runtype == 0) continue;
                 var enclosure = item.SelectSingleNode("enclosure");
                 if (enclosure == null) continue;
                 var WinBase = enclosure.Attributes["url"]?.Value;
@@ -168,29 +170,23 @@ public partial class DownloadWindow : Window
             {
                 //base
                 await DownloadFileAsync(client, data.BaseURL, $"{cachePath}{baseName}", 0, 50);
-                await DownloadFileAsync(client, data.WinBaseURL, $"{cachePath}{winmodName}", 100, 50);
+                await DownloadFileAsync(client, data.WinBaseURL, $"{cachePath}{winmodName}", 50, 100);
                 Directory.CreateDirectory($"{cachePath}runtime-{data.Version}");
-                await Task.Run(() =>
-                {
-                    ExtractRuntime($"{cachePath}{baseName}", $"{cachePath}runtime-{data.Version}", YYMD5.CalculateZipPassword(baseName));
-                    ExtractRuntime($"{cachePath}{winmodName}", $"{cachePath}runtime-{data.Version}", YYMD5.CalculateZipPassword(winmodName));
-                });
+                await ExtractRuntime($"{cachePath}{baseName}", $"{cachePath}runtime-{data.Version}", YYMD5.CalculateZipPassword(baseName));
+                await ExtractRuntime($"{cachePath}{winmodName}", $"{cachePath}runtime-{data.Version}", YYMD5.CalculateZipPassword(winmodName));
             }
             else
             {
                 await DownloadFileAsync(client, data.BaseURL, $"{cachePath}{baseName}", 0, 100);
 
                 Directory.CreateDirectory($"{cachePath}runtime-{data.Version}");
-                await Task.Run(() =>
-                {
-                    ExtractRuntime($"{cachePath}{baseName}", $"{cachePath}runtime-{data.Version}", YYMD5.CalculateZipPassword(baseName));
-                });
+                await ExtractRuntime($"{cachePath}{baseName}", $"{cachePath}runtime-{data.Version}", YYMD5.CalculateZipPassword(baseName));
             }
-            //MainWindow.CopyDirectory($"{cachePath}runtime-{data.Version}", $"{installPath}runtime-{data.Version}", true);
-            //File.Delete($"{cachePath}{baseName}");
-            //if (!pre20232)
-            //    File.Delete($"{cachePath}{winmodName}");
-
+            MainWindow.CopyDirectory($"{cachePath}runtime-{data.Version}", $"{installPath}runtime-{data.Version}", true);
+            File.Delete($"{cachePath}{baseName}");
+            if (!pre20232)
+                File.Delete($"{cachePath}{winmodName}");
+            Directory.Delete($"{cachePath}runtime-{data.Version}");
         }
         catch (Exception ex)
         {
@@ -203,24 +199,24 @@ public partial class DownloadWindow : Window
         }
     }
 
-    private void ExtractRuntime(string zipPath, string targetDir, string password)
+    private async Task ExtractRuntime(string zipPath, string targetDir, string password)
     {
         var options = new ReaderOptions { Password = password, LookForHeader = true};
 
-        using (Stream stream = File.OpenRead(zipPath))
-        using (var reader = ReaderFactory.OpenReader(stream, options))
+        using (var reader = ZipArchive.OpenArchive(zipPath, options))
         {
-            while (reader.MoveToNextEntry())
+            foreach (var entry in reader.Entries)
             {
-                if (!reader.Entry.IsDirectory)
+                if (!entry.IsDirectory)
                 {
-                    reader.WriteEntryToDirectory(targetDir, new ExtractionOptions
+                    entry.WriteToDirectory(targetDir, new ExtractionOptions
                     {
                         ExtractFullPath = true,
                         Overwrite = true
                     });
                 }
             }
+            reader.Dispose();
         }
     }
     private async Task DownloadFileAsync(HttpClient client, string url, string path, int minProgress, int maxProgress)
