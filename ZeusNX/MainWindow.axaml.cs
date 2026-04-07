@@ -120,6 +120,7 @@ namespace ZeusNX
             Directory.CreateDirectory("Data\\Metadata");
             Directory.CreateDirectory("Data\\Icons");
             Directory.CreateDirectory("Data\\Splashes");
+            Directory.CreateDirectory("Data\\Cache");
             //texture page stuff
             List<string> txtPageList = new List<string> { "256x256", "512x512", "1024x1024", "2048x2048", "4096x4096", "8192x8192", "16384x16384" };
             //lang stuff

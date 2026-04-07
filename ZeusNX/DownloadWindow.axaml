@@ -1,9 +1,48 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:local="clr-namespace:ZeusNX"
         x:Class="ZeusNX.DownloadWindow"
-        Title="Download Runtime"
-        Width="600" Height="600"
-		CanResize="True"
-        WindowStartupLocation="CenterScreen">
-        HELLO WORLD!
+        Title="Runtime Downloader" Width="850" Height="550"
+        WindowStartupLocation="CenterOwner" Background="#1E1E1E">
+
+	<Grid ColumnDefinitions="300, *">
+		<Border Grid.Column="0" BorderBrush="#333" BorderThickness="0,0,1,0">
+			<ListBox Name="RuntimeList" Background="Transparent" SelectionChanged="OnSelectionChanged">
+				<ListBox.ItemTemplate>
+					<DataTemplate x:DataType="local:YYRuntimeMetadata">
+						<StackPanel Margin="10,5">
+							<TextBlock Text="{Binding Version}" FontWeight="Bold" Foreground="White"/>
+							<TextBlock Text="{Binding Date}" FontSize="12" Foreground="#888"/>
+						</StackPanel>
+					</DataTemplate>
+				</ListBox.ItemTemplate>
+			</ListBox>
+		</Border>
+
+		<Grid Grid.Column="1" RowDefinitions="Auto, *, Auto" Margin="20">
+
+			<StackPanel Name="LoadingArea"
+						Grid.Row="1"
+						VerticalAlignment="Center"
+						HorizontalAlignment="Center"
+						Spacing="10">
+				<TextBlock Text="Fetching latest runtimes..." HorizontalAlignment="Center" Foreground="#888"/>
+				<ProgressBar IsIndeterminate="True" Width="200" Height="4"/>
+			</StackPanel>
+
+			<StackPanel Name="DetailsArea" Grid.Row="0" Grid.RowSpan="2" IsVisible="False">
+				<TextBlock Name="VerTitle" FontSize="22" FontWeight="Bold" Text="Select a version"/>
+				<Separator Background="#333" Margin="0,10"/>
+				<ScrollViewer Height="350">
+					<TextBlock Name="PatchNotesText" TextWrapping="Wrap" Foreground="#BBB" FontSize="13"/>
+				</ScrollViewer>
+			</StackPanel>
+
+			<StackPanel Grid.Row="2" Spacing="10" Margin="0,10,0,0">
+				<ProgressBar Name="DownProgress" Height="15" Minimum="0" Maximum="100" IsVisible="False"/>
+				<Button Name="DownloadBtn" Content="Download" HorizontalAlignment="Right"
+						Padding="25,8" IsEnabled="False" Click="OnDownloadClicked"/>
+			</StackPanel>
+		</Grid>
+	</Grid>
 </Window>
