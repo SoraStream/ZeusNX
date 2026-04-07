@@ -332,9 +332,9 @@ namespace ZeusNX
                         var bitmap = new Bitmap(stream);
                         gamesplash.Source = bitmap;
                         string fileName = filePath.Split('\\')[filePath.Split('\\').Length - 1];
-                        if (File.Exists($"Data\\Icons\\{fileName}"))
-                            File.Delete($"Data\\Icons\\{fileName}");
-                        File.Copy(filePath, $"Data\\Icons\\{fileName}");
+                        if (File.Exists($"Data\\Splashes\\{fileName}"))
+                            File.Delete($"Data\\Splashes\\{fileName}");
+                        File.Copy(filePath, $"Data\\Splashes\\{fileName}");
                         trace("INFO", $"Splash loaded: {filePath}");
                     }
                 }
@@ -390,8 +390,8 @@ namespace ZeusNX
                         else
                         {
                             trace("ERROR", $"Image size is {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}. Must be 256x256!");
+                            bitmap.Dispose();
                         }
-                        bitmap.Dispose();
                     }
                 }
                 catch (Exception ex)
