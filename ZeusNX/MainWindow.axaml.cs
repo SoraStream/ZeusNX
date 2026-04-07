@@ -61,7 +61,7 @@ namespace ZeusNX
         }
 
         //thank you https://learn.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
-        static void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
+        static public void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
         {
             // Get information about the source directory
             var dir = new DirectoryInfo(sourceDir);

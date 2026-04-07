@@ -2,8 +2,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="ZeusNX.MainWindow"
         Title="ZeusNX"
-        Width="1200" Height="700"
-		MinWidth="1200" MinHeight="700"
+        Width="1200" Height="705"
+		MinWidth="1200" MinHeight="705"
 		CanResize="True"
         WindowStartupLocation="CenterScreen">
 
