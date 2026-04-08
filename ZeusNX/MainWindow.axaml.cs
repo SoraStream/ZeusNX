@@ -204,7 +204,7 @@ namespace ZeusNX
 
         private void OnOpenDownloaderClicked(object sender, RoutedEventArgs e)
         {
-            var downloadWin = new DownloadWindow(trace); // Pass the trace function
+            var downloadWin = new DownloadWindow();
             downloadWin.ShowDialog(this);
         }
 

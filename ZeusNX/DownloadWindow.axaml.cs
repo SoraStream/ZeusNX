@@ -34,10 +34,10 @@ public partial class DownloadWindow : Window
 {
     string cachePath = "Data\\Cache\\";
     bool init = false;
-    public DownloadWindow(Action<string, string> traceAction)
+    public DownloadWindow()
     {
         InitializeComponent();
-        var trace = traceAction;
+        //var trace = traceAction;
         LoadRuntimes(0);
         init = true;
     }
@@ -151,14 +151,24 @@ public partial class DownloadWindow : Window
 
         YYRuntimeMetadata data = (RuntimeList.SelectedItem as YYRuntimeMetadata)!;
         string installPath = $"C:\\ProgramData\\GameMakerStudio2\\Cache\\runtimes\\";
+        string baseName = string.Empty;
+        string winmodName = string.Empty;
         bool pre20232 = false;
-        string baseName = data.BaseURL.Replace("https://", "");
-        baseName = baseName.Split("/")[1];
-        string winmodName = data.WinBaseURL.Replace("https://", "");
-        winmodName = winmodName.Split("/")[1];
-
-        if (winmodName == baseName)
+        bool lts = false;
+        if (data.BaseURL == data.WinBaseURL)
             pre20232 = true;
+        if (data.Version.Contains("2022.0"))
+            lts = true;
+        if (lts)
+            baseName = data.BaseURL.Replace("http://", ""); //thanks lts
+        else
+            baseName = data.BaseURL.Replace("https://", ""); 
+        baseName = baseName.Split("/")[1];
+        if (!pre20232)
+        {
+            winmodName = data.WinBaseURL.Replace("https://", "");
+            winmodName = winmodName.Split("/")[1];
+        }
         DownloadBtn.IsEnabled = false;
         DownProgress.IsVisible = true;
         DownProgress.Value = 0;
@@ -186,7 +196,12 @@ public partial class DownloadWindow : Window
             File.Delete($"{cachePath}{baseName}");
             if (!pre20232)
                 File.Delete($"{cachePath}{winmodName}");
-            Directory.Delete($"{cachePath}runtime-{data.Version}");
+            Directory.Delete($"{cachePath}runtime-{data.Version}", true);
+
+            if (lts)
+                LoadRuntimes(1);
+            else
+                LoadRuntimes(0);
         }
         catch (Exception ex)
         {
@@ -194,14 +209,13 @@ public partial class DownloadWindow : Window
         }
         finally
         {
-            DownloadBtn.IsEnabled = true;
             DownProgress.IsVisible = false;
         }
     }
 
     private async Task ExtractRuntime(string zipPath, string targetDir, string password)
     {
-        var options = new ReaderOptions { Password = password, LookForHeader = true};
+        var options = new ReaderOptions { Password = password, LookForHeader = true, LeaveStreamOpen = false };
 
         using (var reader = ZipArchive.OpenArchive(zipPath, options))
         {
@@ -216,7 +230,6 @@ public partial class DownloadWindow : Window
                     });
                 }
             }
-            reader.Dispose();
         }
     }
     private async Task DownloadFileAsync(HttpClient client, string url, string path, int minProgress, int maxProgress)
