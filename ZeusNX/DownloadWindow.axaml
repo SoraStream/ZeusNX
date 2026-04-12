@@ -15,7 +15,7 @@
 	</Window.Styles>
 
 	<Grid RowDefinitions="Auto, *">
-		<TabControl Grid.Row="0" Margin="10" SelectionChanged="test">
+		<TabControl Grid.Row="0" Margin="10" SelectionChanged="GetRuntimes">
 			<TabItem Header="Monthly"/>
 			<TabItem Header="LTS"/>
 			<TabItem Header="ZeusNX"/>
@@ -24,10 +24,10 @@
 			<Border Grid.Column="0" BorderBrush="#333" BorderThickness="0,0,1,0">
 				<ListBox Name="RuntimeList" Background="Transparent" SelectionChanged="OnSelectionChanged">
 					<ListBox.ItemTemplate>
-						<DataTemplate x:DataType="local:YYRuntimeMetadata">
+						<DataTemplate x:DataType="local:IRuntimeItem">
 							<StackPanel Margin="10,5">
-								<TextBlock Text="{Binding Version}" FontWeight="Bold" Foreground="White"/>
-								<TextBlock Text="{Binding Date}" FontSize="12" Foreground="#888"/>
+								<TextBlock Text="{Binding DisplayVersion}" FontWeight="Bold" Foreground="White"/>
+								<TextBlock Text="{Binding DisplaySubtitle}" FontSize="12" Foreground="#888"/>
 							</StackPanel>
 						</DataTemplate>
 					</ListBox.ItemTemplate>
