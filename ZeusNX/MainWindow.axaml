@@ -145,7 +145,7 @@
 						<CheckBox Name="debugCheck" Content="Enable debug output?"/>
 						<CheckBox Name="fileaccessCheck" Content="Enable file access logging to SD card?"/>
 						<CheckBox Name="interpolateCheck" Content="Interpolate colors between pixels?"/>
-						<CheckBox Name="scaleCheck" Content="Keep aspect ratio?"/>
+						<CheckBox Name="scaleCheck" Content="Keep aspect ratio?" IsChecked="True" />
 						<TextBlock Text="Texture Page Size:"/>
 						<ComboBox Name="texturesizesel" Width="200" SelectedIndex="3" />
 						<CheckBox Name="splashCheck" Content="Enable Splash Screen?"/>
