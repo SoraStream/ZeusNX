@@ -1,0 +1,19 @@
+site_name: ZeusNX Docs
+markdown_extensions:
+  - admonition
+nav:
+  - Home: index.md
+  - Functions:
+    - switch_accounts_close_user: funcs/switch_accounts_close_user.md
+    - switch_accounts_get_accounts: funcs/switch_accounts_get_accounts.md
+    - switch_accounts_get_handle: funcs/switch_accounts_get_handle.md
+    - switch_accounts_get_netid: funcs/switch_accounts_get_netid.md
+    - switch_accounts_get_nickname: funcs/switch_accounts_get_nickname.md
+    - switch_accounts_get_online_token: funcs/switch_accounts_get_online_token.md
+    - switch_accounts_is_user_open: funcs/switch_accounts_is_user_open.md
+  - Constants:
+    - SwitchControllerJoyconHoldType:  consts/SwitchControllerJoyconHoldType.md
+    - SwitchController: consts/SwitchController.md
+  - Guides:
+    - Save Management: guides/saveguide.md
+theme: readthedocs
