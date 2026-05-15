@@ -405,3 +405,5 @@ FodyWeavers.xsd
 /ZeusNX/Runners/runtime-2022.0.3.99
 /ZeusNX/Runners/runtime-2024.14.4.268
 /Runners
+/.idea
+.DS_Store
