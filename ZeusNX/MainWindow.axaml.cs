@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
@@ -25,8 +26,10 @@ namespace ZeusNX
     {
         private string ZeusNXVersion = "1.0.0";
         private int langIndex = 0;
+        public static OperatingSystem platform = Environment.OSVersion; //figure this out later
+        public static string architecture = "x64"; //also figure this out later, there will only be arm64 and x64 builds
         public bool enablePrefab = false;
-        public string compilerPath = "\\bin\\assetcompiler\\windows\\x64"; //append to runtime path.
+        public string compilerPath = Path.Combine("bin", "assetcompiler", "windows", architecture);//"\\bin\\assetcompiler\\windows\\x64"; //append to runtime path. TODO don't hardcode it to windows, include mac + linux paths or custom paths
         public List<string> languages = new List<string> { "AmericanEnglish",
                                                            "CanadianFrench",
                                                            "LatinAmericanSpanish",
@@ -43,7 +46,8 @@ namespace ZeusNX
                                                            "Dutch",
                                                            "Portuguese",
                                                            "Russian"};
-        public string splashPath = "Runners\\shared\\splash_default.png";
+
+        public string splashPath = Path.Combine("Runners", "shared", "splash_default.png");
         public Dictionary<string, string> langNames = new Dictionary<string, string>();
         public Dictionary<string, string> icoPaths = new Dictionary<string, string>();
         public Dictionary<string, string> titleNames = new Dictionary<string, string>();
@@ -58,6 +62,8 @@ namespace ZeusNX
             if (metalist.SelectedItem != null)
                 LoadMetadata(null, null);
             trace("INFO", $"Welcome to ZeusNX, Version {ZeusNXVersion}");
+            trace("DEBUG", $"Running on {platform.Platform.ToString()}, {platform.VersionString}");
+            trace("DEBUG", $"Asset Compiler Path Is: {compilerPath}");
         }
 
         //thank you https://learn.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
@@ -111,17 +117,17 @@ namespace ZeusNX
 
         private void PopulateMetadata()
         {
-            metalist.ItemsSource = Directory.GetFiles("Data\\Metadata").Select(f => new FileInfo(f)).OrderByDescending(f => f.LastAccessTime).Select(f => Path.GetFileNameWithoutExtension(f.Name)).ToList();
+            metalist.ItemsSource = Directory.GetFiles(Path.Combine("Data", "Metadata")).Select(f => new FileInfo(f)).OrderByDescending(f => f.LastAccessTime).Select(f => Path.GetFileNameWithoutExtension(f.Name)).ToList();
         }
 
         private void InitDict()
         {
             Directory.CreateDirectory("Runners");
             Directory.CreateDirectory("Data");
-            Directory.CreateDirectory("Data\\Metadata");
-            Directory.CreateDirectory("Data\\Icons");
-            Directory.CreateDirectory("Data\\Splashes");
-            Directory.CreateDirectory("Data\\Cache");
+            Directory.CreateDirectory(Path.Combine("Data", "Metadata"));
+            Directory.CreateDirectory(Path.Combine("Data", "Icons"));
+            Directory.CreateDirectory(Path.Combine("Data", "Splashes"));
+            Directory.CreateDirectory(Path.Combine("Data", "Cache"));
             //texture page stuff
             List<string> txtPageList = new List<string> { "256x256", "512x512", "1024x1024", "2048x2048", "4096x4096", "8192x8192", "16384x16384" };
             //lang stuff
@@ -141,62 +147,18 @@ namespace ZeusNX
             langNames.Add("Dutch", "Dutch");
             langNames.Add("Portuguese", "Portuguese");
             langNames.Add("Russian", "Russian");
-            //icon stuff
-            icoPaths.Add("AmericanEnglish", "Runners\\shared\\ico_default.jpg");
-            icoPaths.Add("CanadianFrench", "Runners\\shared\\ico_default.jpg");
-            icoPaths.Add("LatinAmericanSpanish", "Runners\\shared\\ico_default.jpg");
-            icoPaths.Add("BrazilianPortuguese", "Runners\\shared\\ico_default.jpg");
-            icoPaths.Add("Japanese", "Runners\\shared\\ico_default.jpg");
-            icoPaths.Add("SimplifiedChinese", "Runners\\shared\\ico_default.jpg");
-            icoPaths.Add("TraditionalChinese", "Runners\\shared\\ico_default.jpg");
-            icoPaths.Add("Korean", "Runners\\shared\\ico_default.jpg");
-            icoPaths.Add("BritishEnglish", "Runners\\shared\\ico_default.jpg");
-            icoPaths.Add("French", "Runners\\shared\\ico_default.jpg");
-            icoPaths.Add("German", "Runners\\shared\\ico_default.jpg");
-            icoPaths.Add("Spanish", "Runners\\shared\\ico_default.jpg");
-            icoPaths.Add("Italian", "Runners\\shared\\ico_default.jpg");
-            icoPaths.Add("Dutch", "Runners\\shared\\ico_default.jpg");
-            icoPaths.Add("Portuguese", "Runners\\shared\\ico_default.jpg");
-            icoPaths.Add("Russian", "Runners\\shared\\ico_default.jpg");
-            //title stuff
-            titleNames.Add("AmericanEnglish", "ZeusNX Application");
-            titleNames.Add("CanadianFrench", "ZeusNX Application");
-            titleNames.Add("LatinAmericanSpanish", "ZeusNX Application");
-            titleNames.Add("BrazilianPortuguese", "ZeusNX Application");
-            titleNames.Add("Japanese", "ZeusNX Application");
-            titleNames.Add("SimplifiedChinese", "ZeusNX Application");
-            titleNames.Add("TraditionalChinese", "ZeusNX Application");
-            titleNames.Add("Korean", "ZeusNX Application");
-            titleNames.Add("BritishEnglish", "ZeusNX Application");
-            titleNames.Add("French", "ZeusNX Application");
-            titleNames.Add("German", "ZeusNX Application");
-            titleNames.Add("Spanish", "ZeusNX Application");
-            titleNames.Add("Italian", "ZeusNX Application");
-            titleNames.Add("Dutch", "ZeusNX Application");
-            titleNames.Add("Portuguese", "ZeusNX Application");
-            titleNames.Add("Russian", "ZeusNX Application");
-            //publisher stuff
-            titleAuthors.Add("AmericanEnglish", "ZeusNX User");
-            titleAuthors.Add("CanadianFrench", "ZeusNX User");
-            titleAuthors.Add("LatinAmericanSpanish", "ZeusNX User");
-            titleAuthors.Add("BrazilianPortuguese", "ZeusNX User");
-            titleAuthors.Add("Japanese", "ZeusNX User");
-            titleAuthors.Add("SimplifiedChinese", "ZeusNX User");
-            titleAuthors.Add("TraditionalChinese", "ZeusNX User");
-            titleAuthors.Add("Korean", "ZeusNX User");
-            titleAuthors.Add("BritishEnglish", "ZeusNX User");
-            titleAuthors.Add("French", "ZeusNX User");
-            titleAuthors.Add("German", "ZeusNX User");
-            titleAuthors.Add("Spanish", "ZeusNX User");
-            titleAuthors.Add("Italian", "ZeusNX User");
-            titleAuthors.Add("Dutch", "ZeusNX User");
-            titleAuthors.Add("Portuguese", "ZeusNX User");
-            titleAuthors.Add("Russian", "ZeusNX User");
+            
+            foreach (var lang in languages)
+            {
+                icoPaths.Add(lang, Path.Combine("Runners", "shared", "ico_default.jpg"));
+                titleNames.Add(lang, "ZeusNX Application");
+                titleAuthors.Add(lang, "ZeusNX User");
+            }
 
             //init everything using first lang
             currentLang.Text = langNames["AmericanEnglish"];
             gameico.Source = new Bitmap(icoPaths["AmericanEnglish"]);
-            gamesplash.Source = new Bitmap("Runners\\shared\\splash_default.png");
+            gamesplash.Source = new Bitmap(Path.Combine("Runners", "shared", "splash_default.png"));
             titlename.Text = titleNames["AmericanEnglish"];
             titleauthor.Text = titleAuthors["AmericanEnglish"];
             texturesizesel.ItemsSource = txtPageList;
@@ -332,10 +294,10 @@ namespace ZeusNX
                     {
                         var bitmap = new Bitmap(stream);
                         gamesplash.Source = bitmap;
-                        string fileName = filePath.Split('\\')[filePath.Split('\\').Length - 1];
-                        if (File.Exists($"Data\\Splashes\\{fileName}"))
-                            File.Delete($"Data\\Splashes\\{fileName}");
-                        File.Copy(filePath, $"Data\\Splashes\\{fileName}");
+                        string fileName = Path.GetFileName(filePath);
+                        if (File.Exists(Path.Combine("Data", "Splashes", fileName)))
+                            File.Delete(Path.Combine("Data", "Splashes", fileName));
+                        File.Copy(filePath, Path.Combine("Data", "Splashes", fileName));
                         trace("INFO", $"Splash loaded: {filePath}");
                     }
                 }
@@ -381,11 +343,11 @@ namespace ZeusNX
                         {
                             string curlang = languages[langIndex];
                             gameico.Source = bitmap;
-                            string fileName = filePath.Split('\\')[filePath.Split('\\').Length - 1];
-                            if (File.Exists($"Data\\Icons\\{fileName}"))
-                                File.Delete($"Data\\Icons\\{fileName}");
-                            File.Copy(filePath, $"Data\\Icons\\{fileName}");
-                            icoPaths[curlang] = $"Data\\Icons\\{fileName}";
+                            string fileName = Path.GetFileName(filePath);
+                            if (File.Exists(Path.Combine("Data", "Icons", fileName)))
+                                File.Delete(Path.Combine("Data", "Icons", fileName));
+                            File.Copy(filePath, Path.Combine("Data", "Icons", fileName));
+                            icoPaths[curlang] = Path.Combine("Data", "Icons", fileName);
                             trace("INFO", $"Icon loaded: {filePath}");
                         }
                         else
@@ -605,7 +567,7 @@ namespace ZeusNX
             //if (file != null)
             //{
             string json = JsonConvert.SerializeObject(meta, Formatting.Indented);
-            string filePath = $"Data\\Metadata\\{meta.ProjectPath.Split("\\")[meta.ProjectPath.Split("\\").Length - 1].Replace(".yyp", "")}.znx";
+            string filePath = Path.Combine("Data", "Metadata", $"{Path.GetFileNameWithoutExtension(meta.ProjectPath)}.znx");
             try
             {            
                 if (!File.Exists(filePath))
@@ -638,7 +600,7 @@ namespace ZeusNX
                 return;
             }
 
-            string filePath = $"Data\\Metadata\\{metalist.SelectedItem}.znx";
+            string filePath = Path.Combine("Data", "Metadata", $"{metalist.SelectedItem}.znx");
             string json = await File.ReadAllTextAsync(filePath);
             var meta = JsonConvert.DeserializeObject<ZeusNXMetadata>(json);
 
@@ -684,7 +646,7 @@ namespace ZeusNX
                 titleNames = meta.TitleNames ?? titleNames;
                 titleAuthors = meta.TitleAuthors ?? titleAuthors;
                 icoPaths = meta.IconPaths ?? icoPaths;
-                splashPath = meta.SplashPath ?? "Runners\\shared\\splash_default.png";
+                splashPath = meta.SplashPath ?? Path.Combine("Runners", "shared", "splash_default.png");
                 //load splash
                 try
                 {
