@@ -26,7 +26,7 @@ namespace ZeusNX
     {
         private string ZeusNXVersion = "1.0.0";
         private int langIndex = 0;
-        public static OperatingSystem platform = Environment.OSVersion; //figure this out later
+        public static string platform = "windows";
         public static string architecture = "x64"; //also figure this out later, there will only be arm64 and x64 builds
         public bool enablePrefab = false;
         public string compilerPath = Path.Combine("bin", "assetcompiler", "windows", architecture);//"\\bin\\assetcompiler\\windows\\x64"; //append to runtime path. TODO don't hardcode it to windows, include mac + linux paths or custom paths
@@ -62,7 +62,7 @@ namespace ZeusNX
             if (metalist.SelectedItem != null)
                 LoadMetadata(null, null);
             trace("INFO", $"Welcome to ZeusNX, Version {ZeusNXVersion}");
-            trace("DEBUG", $"Running on {platform.Platform.ToString()}, {platform.VersionString}");
+            trace("DEBUG", $"Running on {platform}");
             trace("DEBUG", $"Asset Compiler Path Is: {compilerPath}");
         }
 
@@ -122,6 +122,13 @@ namespace ZeusNX
 
         private void InitDict()
         {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                platform = "windows";
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                platform = "osx";
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                platform = "linux";
+            
             Directory.CreateDirectory("Runners");
             Directory.CreateDirectory("Data");
             Directory.CreateDirectory(Path.Combine("Data", "Metadata"));
@@ -408,27 +415,52 @@ namespace ZeusNX
             var runtimes = new List<string>();
             try
             {
+                string endingDir = Path.Combine("Cache", "runtimes");
+                string basePath = ""; //TECHNICALLY there's no linux path.
+                string ltsPath = ""; //TECHNICALLY there's no linux path.
+                string betaPath = ""; 
+                string devPath = "";
+
+                switch (platform)
+                {
+                    case "windows":
+                        basePath = Path.Combine("C:", "ProgramData", "GameMakerStudio2", endingDir);
+                        ltsPath = basePath.Replace("GameMakerStudio2", "GameMakerStudio2-LTS");
+                        betaPath = basePath.Replace("GameMakerStudio2", "GameMakerStudio2-Beta");
+                        devPath = basePath.Replace("GameMakerStudio2", "GameMakerStudio2-Dev");
+                        break;
+                    case "osx":
+                        basePath = "/" + Path.Combine("Users", "Shared", "GameMakerStudio2", endingDir);
+                        ltsPath = basePath.Replace("GameMakerStudio2", "GameMakerStudio2-LTS");
+                        betaPath = basePath.Replace("GameMakerStudio2", "GameMakerStudio2-Beta");
+                        devPath = basePath.Replace("GameMakerStudio2", "GameMakerStudio2-Dev");
+                        break;
+                    case "linux":
+                        break;
+                }
+
+
                 //mainline
-                if (Directory.Exists("C:\\ProgramData\\GameMakerStudio2\\Cache\\runtimes"))
-                    runtimes.AddRange(Directory.GetDirectories("C:\\ProgramData\\GameMakerStudio2\\Cache\\runtimes").Select(Path.GetFileName).Select(name => $"{name.Replace("runtime-", "")} | Mainline").ToList());
+                if (Directory.Exists(basePath))
+                    runtimes.AddRange(Directory.GetDirectories(basePath).Select(Path.GetFileName).Select(name => $"{name.Replace("runtime-", "")} | Mainline").ToList());
                 else
                     trace("ERROR", "No Mainline Runtimes Found!");
 
                 //LTS
-                if (Directory.Exists("C:\\ProgramData\\GameMakerStudio2-LTS\\Cache\\runtimes"))
-                    runtimes.AddRange(Directory.GetDirectories("C:\\ProgramData\\GameMakerStudio2-LTS\\Cache\\runtimes").Select(Path.GetFileName).Select(name => $"{name.Replace("runtime-", "")} | LTS").ToList());
+                if (Directory.Exists(ltsPath))
+                    runtimes.AddRange(Directory.GetDirectories(ltsPath).Select(Path.GetFileName).Select(name => $"{name.Replace("runtime-", "")} | LTS").ToList());
                 else
                     trace("WARN", "No LTS Runtimes Found!");
 
                 //Beta
-                if (Directory.Exists("C:\\ProgramData\\GameMakerStudio2-Beta\\Cache\\runtimes"))
-                    runtimes.AddRange(Directory.GetDirectories("C:\\ProgramData\\GameMakerStudio2-Beta\\Cache\\runtimes").Select(Path.GetFileName).Select(name => $"{name.Replace("runtime-", "")} | Beta").ToList());
+                if (Directory.Exists(betaPath))
+                    runtimes.AddRange(Directory.GetDirectories(betaPath).Select(Path.GetFileName).Select(name => $"{name.Replace("runtime-", "")} | Beta").ToList());
                 else
                     trace("WARN", "No Beta Runtimes Found!");
 
                 //Nocturnus
-                if (Directory.Exists("C:\\ProgramData\\GameMakerStudio2-Dev\\Cache\\runtimes"))
-                    runtimes.AddRange(Directory.GetDirectories("C:\\ProgramData\\GameMakerStudio2-Dev\\Cache\\runtimes").Select(Path.GetFileName).Select(name => $"{name.Replace("runtime-", "")} | Dev").ToList());
+                if (Directory.Exists(devPath))
+                    runtimes.AddRange(Directory.GetDirectories(devPath).Select(Path.GetFileName).Select(name => $"{name.Replace("runtime-", "")} | Dev").ToList());
                 else
                     trace("WARN", "No Dev Runtimes Found!");
 
