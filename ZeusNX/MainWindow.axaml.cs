@@ -15,7 +15,6 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Mono.Cecil;
-using Mono.Cecil.Cil;
 using ZeusNX.Ini;
 using ZeusNX.Metadata;
 using ZeusNX.NMeta;
@@ -897,7 +896,7 @@ namespace ZeusNX
                 //new and improved!
                 var writerparams = new WriterParameters { DeterministicMvid = true, SymbolWriterProvider = null, };
                 var assetcompiler = AssemblyDefinition.ReadAssembly($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}", new ReaderParameters { ReadWrite = true });
-                PatchAssetCompiler(assetcompiler);
+                YYPatch.PatchAssetCompiler(assetcompiler);
                 assetcompiler.Write($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}", writerparams); //:pray:
                 assetcompiler.Dispose();
                 await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
@@ -1161,8 +1160,8 @@ namespace ZeusNX
 
         private async Task<int> runCompiler(string runtimePath, string projPath, string projName, string buildDir, string config, bool isPreprocess)
         {
-            string absolutePath = Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory); //System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string args = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{projName}\" /td=\"{buildDir}\\tmp\" /cd=\"{buildDir}\\cache\" /rtp=\"{runtimePath}\" ";
+            string absolutePath = Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory);
+            string args = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{projName}\" /td=\"{buildDir}\\tmp\" /cd=\"{buildDir}\\cache\" /rtp=\"{runtimePath.Remove(runtimePath.Length - 1)}\" ";
             if (enablePrefab)
                 args += "/prefabs=\"C:\\ProgramData\\GameMakerStudio2\\Prefabs\" ";
             args += $"/m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /cfg=\"{config}\" /o=\"{absolutePath}{buildDir}\\nsp\\romfs\" \"{projPath}\" ";
@@ -1202,133 +1201,6 @@ namespace ZeusNX
             }
 
             return true;
-        }
-        
-        public static MethodDefinition FindMethod(AssemblyDefinition assembly, string targetName)
-        {
-            foreach (var type in assembly.MainModule.GetTypes())
-            {
-                foreach (var method in type.Methods)
-                {
-                    if (method.Name == targetName || method.FullName.Contains(targetName))
-                        return method;
-                }
-            }
-            return null;
-        }
-        
-        public static void PatchAssetCompiler(AssemblyDefinition assetCompiler)
-        {
-            var mainModule = assetCompiler.MainModule;
-            //CheckMakerInvokedMe()
-            var method1 = FindMethod(assetCompiler, "CheckMakerInvokedMe");
-            var processor = method1.Body.GetILProcessor();
-            method1.Body.Instructions.Clear();
-            var method1type = method1.DeclaringType;
-    
-            var setLicense = method1type.Methods.First(m => m.Name == "set_LicenseValidForBuild");
-            var getFeaturesEnable = method1type.Methods.First(m => m.Name == "get_FeatureFlagsEnable");
-            var setFeaturesEnable = method1type.Methods.First(m => m.Name == "set_FeatureFlagsEnable");
-            var getFeaturesDisable = method1type.Methods.First(m => m.Name == "get_FeatureFlagsDisable");
-            var setFeaturesDisable = method1type.Methods.First(m => m.Name == "set_FeatureFlagsDisable");
-            var setDefaultLimits = method1type.Methods.First(m => m.Name == "SetDefaultLimits");
-            var limitsField = method1type.Fields.First(f => f.Name == "Limits");
-            
-            processor.Emit(OpCodes.Ldc_I4_1);
-            processor.Emit(OpCodes.Call, setLicense);
-            processor.Emit(OpCodes.Call, getFeaturesEnable);
-            var label17 = processor.Create(OpCodes.Nop);
-            processor.Emit(OpCodes.Brtrue_S, label17);
-            processor.Emit(OpCodes.Newobj, mainModule.ImportReference(typeof(System.Collections.Generic.Dictionary<string, string>).GetConstructor(Type.EmptyTypes)));
-            processor.Emit(OpCodes.Call, setFeaturesEnable);
-            processor.Append(label17);
-            processor.Emit(OpCodes.Call, getFeaturesDisable);
-            var label28 = processor.Create(OpCodes.Nop);
-            processor.Emit(OpCodes.Brtrue_S, label28);
-            processor.Emit(OpCodes.Newobj, mainModule.ImportReference(typeof(System.Collections.Generic.Dictionary<string, string>).GetConstructor(Type.EmptyTypes)));
-            processor.Emit(OpCodes.Call, setFeaturesDisable);
-            processor.Append(label28);
-            processor.Emit(OpCodes.Call, setDefaultLimits);
-            processor.Emit(OpCodes.Stsfld, limitsField);
-    
-            //dummy shit
-            for (int i = 0; i < 8; i++)
-                processor.Emit(OpCodes.Ldc_I4_0);
-            for (int i = 0; i < 8; i++)
-                processor.Emit(OpCodes.Pop);
-    
-            processor.Emit(OpCodes.Ldc_I4_1);
-            processor.Emit(OpCodes.Ret);
-            processor = null;
-            //IsFeatureEnabled(string feature)
-            var method2 = FindMethod(assetCompiler, "IsFeatureEnabled");
-            processor = method2.Body.GetILProcessor();
-            method2.Body.Instructions.Clear();
-    
-            processor.Emit(OpCodes.Ldc_I4_1);
-            processor.Emit(OpCodes.Ret);
-            processor = null;
-    
-            //LimitsAllow(string catagory)
-            var method3 = FindMethod(assetCompiler, "LimitsAllow");
-            processor = method3.Body.GetILProcessor();
-            method3.Body.Instructions.Clear();
-    
-            processor.Emit(OpCodes.Ldc_I4_1);
-            processor.Emit(OpCodes.Ret);
-    
-            processor = null;
-    
-            //SetDefaultLimits()
-            var method4 = FindMethod(assetCompiler, "SetDefaultLimits");
-            processor = method4.Body.GetILProcessor();
-            method4.Body.Instructions.Clear();
-            var method4type = method4.DeclaringType;
-            var dictType = typeof(Dictionary<string, object>);
-            var dictCtor = mainModule.ImportReference(dictType.GetConstructor(Type.EmptyTypes));
-            var dictAdd = mainModule.ImportReference(dictType.GetMethod("Add"));
-            var int32Type = mainModule.TypeSystem.Int32;     
-            limitsField = method4type.Fields.First(f => f.Name == "Limits");
-            void AddLimit(string key, int value)
-            {
-                processor.Emit(OpCodes.Dup);
-                processor.Emit(OpCodes.Ldstr, key);
-    
-                if (value == 1)
-                    processor.Emit(OpCodes.Ldc_I4_1);
-                else
-                    processor.Emit(OpCodes.Ldc_I4, value);
-    
-                processor.Emit(OpCodes.Box, int32Type);
-                processor.Emit(OpCodes.Callvirt, dictAdd);
-            }
-    
-            processor.Emit(OpCodes.Newobj, dictCtor);
-            AddLimit("Sprite", 99999);
-            AddLimit("Tilesets", 99999);
-            AddLimit("Sounds", 99999);
-            AddLimit("Paths", 99999);
-            AddLimit("Scripts", 99999);
-            AddLimit("Shaders", 1);
-            AddLimit("Fonts", 99999);
-            AddLimit("Timelines", 99999);
-            AddLimit("Objects", 99999);
-            AddLimit("Rooms", 99999);
-            AddLimit("Datafiles", 99999);
-            AddLimit("Extensions", 1);
-            AddLimit("Configs", 1);
-            AddLimit("TexturePageSize", 1);
-            AddLimit("PackageCreation", 1);
-            AddLimit("SourceControl", 1);
-            AddLimit("Import", 1);
-            AddLimit("Export", 1);
-            AddLimit("SWF", 1);
-            AddLimit("Spine", 1);
-            AddLimit("TextureGroups", 1);
-            AddLimit("AudioGroups", 1);
-            processor.Emit(OpCodes.Stsfld, limitsField);
-            processor.Emit(OpCodes.Ldsfld, limitsField);
-            processor.Emit(OpCodes.Ret);
         }
     }
 }
