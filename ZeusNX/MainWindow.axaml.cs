@@ -895,9 +895,11 @@ namespace ZeusNX
                 //    return;
                 //}
                 //new and improved!
-                var assetcompiler = AssemblyDefinition.ReadAssembly($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}", new ReaderParameters { ReadWrite = true });
+                var writerparams = new WriterParameters { DeterministicMvid = true, SymbolWriterProvider = null, };
+                var assetcompiler = AssemblyDefinition.ReadAssembly($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}", new ReaderParameters { ReadWrite = true });
                 PatchAssetCompiler(assetcompiler);
-                assetcompiler.Write($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}"); //:pray:
+                assetcompiler.Write($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}", writerparams); //:pray:
+                assetcompiler.Dispose();
                 await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
 
                 //make temp directories and everything
