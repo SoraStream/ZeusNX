@@ -10,11 +10,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
+using Mono.Cecil;
+using Mono.Cecil.Cil;
 using ZeusNX.Ini;
 using ZeusNX.Metadata;
 using ZeusNX.NMeta;
@@ -27,9 +28,9 @@ namespace ZeusNX
         private string ZeusNXVersion = "1.0.0";
         private int langIndex = 0;
         public static string platform = "windows";
-        public static string architecture = "x64"; //also figure this out later, there will only be arm64 and x64 builds
+        public static Architecture architecture = RuntimeInformation.OSArchitecture; //also figure this out later, there will only be arm64 and x64 builds
         public bool enablePrefab = false;
-        public string compilerPath = Path.Combine("bin", "assetcompiler", "windows", architecture);//"\\bin\\assetcompiler\\windows\\x64"; //append to runtime path. TODO don't hardcode it to windows, include mac + linux paths or custom paths
+        public string compilerPath = string.Empty;
         public List<string> languages = new List<string> { "AmericanEnglish",
                                                            "CanadianFrench",
                                                            "LatinAmericanSpanish",
@@ -62,7 +63,7 @@ namespace ZeusNX
             if (metalist.SelectedItem != null)
                 LoadMetadata(null, null);
             trace("INFO", $"Welcome to ZeusNX, Version {ZeusNXVersion}");
-            trace("DEBUG", $"Running on {platform}");
+            trace("DEBUG", $"Running on {platform}, {architecture.ToString().ToLower()}");
             trace("DEBUG", $"Asset Compiler Path Is: {compilerPath}");
         }
 
@@ -128,6 +129,19 @@ namespace ZeusNX
                 platform = "osx";
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 platform = "linux";
+            
+            switch (platform)
+            {
+                case "windows":
+                    compilerPath = Path.Combine("bin", "assetcompiler", "windows", "x64");
+                    break;
+                case "osx":
+                    compilerPath = Path.Combine("bin", "assetcompiler", "osx", architecture.ToString().ToLower());
+                    break;
+                case "linux":
+                    compilerPath = Path.Combine("bin", "assetcompiler", "linux", architecture.ToString().ToLower());
+                    break;
+            }
             
             Directory.CreateDirectory("Runners");
             Directory.CreateDirectory("Data");
@@ -759,24 +773,35 @@ namespace ZeusNX
                     failed = true;
                     return;
                 }
-
-                string[] tempStr = projPath.Split('\\');
-                string projDir = projPath.Replace("\\" + tempStr[tempStr.Length - 1], "");
-                string projName = tempStr[tempStr.Length - 1].Replace(".yyp", "");
+                
+                string projDir = projPath.Replace(Path.GetFileName(projPath), "");
+                string projName = Path.GetFileNameWithoutExtension(projPath);
                 var selectedRuntime = runtimesel.SelectedItem as string;
                 var branch = selectedRuntime?.Split('|')[1].Trim();
                 selectedRuntime = selectedRuntime?.Split('|')[0].Trim();
                 selectedRuntime = $"runtime-{selectedRuntime}";
-                var runtimePath = $"C:\\ProgramData\\GameMakerStudio2{(branch == "Mainline" ? "" : $"-{branch}")}\\Cache\\runtimes\\{selectedRuntime}";
+                string runtimePath = string.Empty;
+                string commonPath = Path.Combine($"GameMakerStudio2{(branch == "Mainline" ? "" : $"-{branch}")}", "Cache", "runtimes", selectedRuntime);
+                switch (platform)
+                {
+                    case "windows":
+                        runtimePath = Path.Combine("C:", "ProgramData", commonPath);
+                        break;
+                    case "osx":
+                        runtimePath = "/" + Path.Combine("Users", "Shared", commonPath);
+                        break;
+                    case "linux":
+                        break;
+                }
 
                 if (!Directory.Exists(runtimePath))
                 {
                     trace("ERROR", $"{selectedRuntime} not found. do you have the runtime installed?");
-                    failed = false;
+                    failed = false; //????
                     return;
                 }
                 //check if associated ZeusNX runtime is here, otherwise halt you kinda need those to make a build
-                if (!Directory.Exists($"Runners\\{selectedRuntime}"))
+                if (!Directory.Exists(Path.Combine("Runners",  selectedRuntime)))
                 {
                     trace("ERROR", $"{selectedRuntime} files not found! Either follow the guide or check the Github repo to make sure you have it.");
                     failed = true;
@@ -830,7 +855,7 @@ namespace ZeusNX
                 if (!selectedRuntime.Contains("2024"))
                 {
                     //backup original yyp
-                    File.Copy(projPath, $"{projDir}\\{projName}.yypbck", true);
+                    File.Copy(projPath, $"{projDir}{projName}.yypbck", true);
                     var options = jYYP["Options"] as JArray;
                     if (options != null)
                     {
@@ -849,26 +874,30 @@ namespace ZeusNX
                         else
                         {
                             trace("INFO", "yyp options already has a Switch entry, skipping...");
-                            File.Delete($"{projDir}\\{projName}.yypbck");
+                            File.Delete($"{projDir}{projName}.yypbck");
                         }
                     }
                 }
 
                 //patch GMAssetCompiler.dll to ignore licence checks
                 trace("INFO", "Patching GMAssetCompiler.dll...");
-                if (File.Exists($"{runtimePath}{compilerPath}\\GMAssetCompiler.bak"))
+                if (File.Exists($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}"))
                 {
-                    File.Delete($"{runtimePath}{compilerPath}\\GMAssetCompiler.dll");
-                    File.Copy($"{runtimePath}{compilerPath}\\GMAssetCompiler.bak", $"{runtimePath}{compilerPath}\\GMAssetCompiler.dll");
-                    File.Delete($"{runtimePath}{compilerPath}\\GMAssetCompiler.bak");
+                    File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}");
+                    File.Copy($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}", $"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}");
+                    File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}");
                 }
-                File.Copy($"{runtimePath}{compilerPath}\\GMAssetCompiler.dll", $"{runtimePath}{compilerPath}\\GMAssetCompiler.bak");
-                File.Delete($"{runtimePath}{compilerPath}\\GMAssetCompiler.dll");
-                if (await runExternalTool("Tools\\xdelta.exe", $"-d -s \"{runtimePath}{compilerPath}\\GMAssetCompiler.bak\" \"Runners\\{selectedRuntime}\\{selectedRuntime}.xdelta\" \"{runtimePath}{compilerPath}\\GMAssetCompiler.dll\"", "XDELTA") != 0)
-                {
-                    failed = true;
-                    return;
-                }
+                File.Copy($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}", $"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}");
+                File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}");
+                //if (await runExternalTool("Tools\\xdelta.exe", $"-d -s \"{runtimePath}{compilerPath}\\GMAssetCompiler.bak\" \"Runners\\{selectedRuntime}\\{selectedRuntime}.xdelta\" \"{runtimePath}{compilerPath}\\GMAssetCompiler.dll\"", "XDELTA") != 0)
+                //{
+                //    failed = true;
+                //    return;
+                //}
+                //new and improved!
+                var assetcompiler = AssemblyDefinition.ReadAssembly($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}", new ReaderParameters { ReadWrite = true });
+                PatchAssetCompiler(assetcompiler);
+                assetcompiler.Write($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}"); //:pray:
                 await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
 
                 //make temp directories and everything
@@ -883,13 +912,13 @@ namespace ZeusNX
                 if (!Directory.Exists(buildDir) || !Directory.EnumerateFileSystemEntries(buildDir).Any())
                 {
                     Directory.CreateDirectory(buildDir);
-                    Directory.CreateDirectory($"{buildDir}\\tmp");
-                    Directory.CreateDirectory($"{buildDir}\\cache");
-                    Directory.CreateDirectory($"{buildDir}\\nsp");
-                    Directory.CreateDirectory($"{buildDir}\\nsp\\exefs");
-                    Directory.CreateDirectory($"{buildDir}\\nsp\\romfs");
-                    Directory.CreateDirectory($"{buildDir}\\nsp\\control");
-                    Directory.CreateDirectory($"{buildDir}\\nsp\\logo");
+                    Directory.CreateDirectory(Path.Combine(buildDir, "tmp"));
+                    Directory.CreateDirectory(Path.Combine(buildDir, "cache"));
+                    Directory.CreateDirectory(Path.Combine(buildDir, "nsp"));
+                    Directory.CreateDirectory(Path.Combine(buildDir, "nsp", "exefs"));
+                    Directory.CreateDirectory(Path.Combine(buildDir, "nsp", "romfs"));
+                    Directory.CreateDirectory(Path.Combine(buildDir, "nsp", "control"));
+                    Directory.CreateDirectory(Path.Combine(buildDir, "nsp", "logo"));
                 }
                 else
                 {
@@ -1171,6 +1200,133 @@ namespace ZeusNX
             }
 
             return true;
+        }
+        
+        public static MethodDefinition FindMethod(AssemblyDefinition assembly, string targetName)
+        {
+            foreach (var type in assembly.MainModule.GetTypes())
+            {
+                foreach (var method in type.Methods)
+                {
+                    if (method.Name == targetName || method.FullName.Contains(targetName))
+                        return method;
+                }
+            }
+            return null;
+        }
+        
+        public static void PatchAssetCompiler(AssemblyDefinition assetCompiler)
+        {
+            var mainModule = assetCompiler.MainModule;
+            //CheckMakerInvokedMe()
+            var method1 = FindMethod(assetCompiler, "CheckMakerInvokedMe");
+            var processor = method1.Body.GetILProcessor();
+            method1.Body.Instructions.Clear();
+            var method1type = method1.DeclaringType;
+    
+            var setLicense = method1type.Methods.First(m => m.Name == "set_LicenseValidForBuild");
+            var getFeaturesEnable = method1type.Methods.First(m => m.Name == "get_FeatureFlagsEnable");
+            var setFeaturesEnable = method1type.Methods.First(m => m.Name == "set_FeatureFlagsEnable");
+            var getFeaturesDisable = method1type.Methods.First(m => m.Name == "get_FeatureFlagsDisable");
+            var setFeaturesDisable = method1type.Methods.First(m => m.Name == "set_FeatureFlagsDisable");
+            var setDefaultLimits = method1type.Methods.First(m => m.Name == "SetDefaultLimits");
+            var limitsField = method1type.Fields.First(f => f.Name == "Limits");
+            
+            processor.Emit(OpCodes.Ldc_I4_1);
+            processor.Emit(OpCodes.Call, setLicense);
+            processor.Emit(OpCodes.Call, getFeaturesEnable);
+            var label17 = processor.Create(OpCodes.Nop);
+            processor.Emit(OpCodes.Brtrue_S, label17);
+            processor.Emit(OpCodes.Newobj, mainModule.ImportReference(typeof(System.Collections.Generic.Dictionary<string, string>).GetConstructor(Type.EmptyTypes)));
+            processor.Emit(OpCodes.Call, setFeaturesEnable);
+            processor.Append(label17);
+            processor.Emit(OpCodes.Call, getFeaturesDisable);
+            var label28 = processor.Create(OpCodes.Nop);
+            processor.Emit(OpCodes.Brtrue_S, label28);
+            processor.Emit(OpCodes.Newobj, mainModule.ImportReference(typeof(System.Collections.Generic.Dictionary<string, string>).GetConstructor(Type.EmptyTypes)));
+            processor.Emit(OpCodes.Call, setFeaturesDisable);
+            processor.Append(label28);
+            processor.Emit(OpCodes.Call, setDefaultLimits);
+            processor.Emit(OpCodes.Stsfld, limitsField);
+    
+            //dummy shit
+            for (int i = 0; i < 8; i++)
+                processor.Emit(OpCodes.Ldc_I4_0);
+            for (int i = 0; i < 8; i++)
+                processor.Emit(OpCodes.Pop);
+    
+            processor.Emit(OpCodes.Ldc_I4_1);
+            processor.Emit(OpCodes.Ret);
+            processor = null;
+            //IsFeatureEnabled(string feature)
+            var method2 = FindMethod(assetCompiler, "IsFeatureEnabled");
+            processor = method2.Body.GetILProcessor();
+            method2.Body.Instructions.Clear();
+    
+            processor.Emit(OpCodes.Ldc_I4_1);
+            processor.Emit(OpCodes.Ret);
+            processor = null;
+    
+            //LimitsAllow(string catagory)
+            var method3 = FindMethod(assetCompiler, "LimitsAllow");
+            processor = method3.Body.GetILProcessor();
+            method3.Body.Instructions.Clear();
+    
+            processor.Emit(OpCodes.Ldc_I4_1);
+            processor.Emit(OpCodes.Ret);
+    
+            processor = null;
+    
+            //SetDefaultLimits()
+            var method4 = FindMethod(assetCompiler, "SetDefaultLimits");
+            processor = method4.Body.GetILProcessor();
+            method4.Body.Instructions.Clear();
+            var method4type = method4.DeclaringType;
+            var dictType = typeof(Dictionary<string, object>);
+            var dictCtor = mainModule.ImportReference(dictType.GetConstructor(Type.EmptyTypes));
+            var dictAdd = mainModule.ImportReference(dictType.GetMethod("Add"));
+            var int32Type = mainModule.TypeSystem.Int32;     
+            limitsField = method4type.Fields.First(f => f.Name == "Limits");
+            void AddLimit(string key, int value)
+            {
+                processor.Emit(OpCodes.Dup);
+                processor.Emit(OpCodes.Ldstr, key);
+    
+                if (value == 1)
+                    processor.Emit(OpCodes.Ldc_I4_1);
+                else
+                    processor.Emit(OpCodes.Ldc_I4, value);
+    
+                processor.Emit(OpCodes.Box, int32Type);
+                processor.Emit(OpCodes.Callvirt, dictAdd);
+            }
+    
+            processor.Emit(OpCodes.Newobj, dictCtor);
+            AddLimit("Sprite", 99999);
+            AddLimit("Tilesets", 99999);
+            AddLimit("Sounds", 99999);
+            AddLimit("Paths", 99999);
+            AddLimit("Scripts", 99999);
+            AddLimit("Shaders", 1);
+            AddLimit("Fonts", 99999);
+            AddLimit("Timelines", 99999);
+            AddLimit("Objects", 99999);
+            AddLimit("Rooms", 99999);
+            AddLimit("Datafiles", 99999);
+            AddLimit("Extensions", 1);
+            AddLimit("Configs", 1);
+            AddLimit("TexturePageSize", 1);
+            AddLimit("PackageCreation", 1);
+            AddLimit("SourceControl", 1);
+            AddLimit("Import", 1);
+            AddLimit("Export", 1);
+            AddLimit("SWF", 1);
+            AddLimit("Spine", 1);
+            AddLimit("TextureGroups", 1);
+            AddLimit("AudioGroups", 1);
+            processor.Emit(OpCodes.Stsfld, limitsField);
+            processor.Emit(OpCodes.Ldsfld, limitsField);
+            processor.Emit(OpCodes.Ret);
         }
     }
 }
