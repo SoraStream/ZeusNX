@@ -785,10 +785,10 @@ namespace ZeusNX
                 switch (platform)
                 {
                     case "windows":
-                        runtimePath = Path.Combine("C:", "ProgramData", commonPath);
+                        runtimePath = Path.Combine("C:", "ProgramData", commonPath, "zarfa").Replace("zarfa", "");
                         break;
                     case "osx":
-                        runtimePath = "/" + Path.Combine("Users", "Shared", commonPath);
+                        runtimePath = "/" + Path.Combine("Users", "Shared", commonPath, "zarfa").Replace("zarfa", "");
                         break;
                     case "linux":
                         break;
