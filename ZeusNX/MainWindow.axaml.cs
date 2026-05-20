@@ -929,8 +929,8 @@ namespace ZeusNX
                 }
                 //copy runtime files to exefs / control
                 trace("INFO", "Copying runtime files...");
-                CopyDirectory($"Runners\\{selectedRuntime}\\bin", $"{buildDir}\\nsp\\exefs", true);
-                CopyDirectory($"Runners\\shared\\logo", $"{buildDir}\\nsp\\logo", true);
+                CopyDirectory(Path.Combine("Runners", selectedRuntime, "bin"), Path.Combine(buildDir, "nsp", "exefs"), true);
+                CopyDirectory(Path.Combine("Runners", "shared", "logo"), Path.Combine(buildDir, "nsp", "logo"), true);
 
                 //generate options.ini out of thin air
                 var optionsINI = new IniFile();
@@ -938,33 +938,31 @@ namespace ZeusNX
                 optionsINI["LLVM-Switch"]["UseNEX"] = false;
                 optionsINI["LLVM-Switch"]["UseNPLN"] = false;
                 optionsINI["LLVM-Switch"]["nMeta"] = "C:\\Users\\ZeusNX\\Project\\options\\switch\\application.nmeta";
-                optionsINI.Save($"{buildDir}\\nsp\\romfs\\options.ini");
+                optionsINI.Save(Path.Combine(buildDir, "nsp", "romfs", "options.ini"));
 
                 //make the preselecteduser file
-                File.Create($"{buildDir}\\nsp\\romfs\\preselected_user").Close();
-                if (preselecteduserCheck.IsChecked == true)
-                    File.WriteAllText($"{buildDir}\\nsp\\romfs\\preselected_user", "False");
-                else
-                    File.WriteAllText($"{buildDir}\\nsp\\romfs\\preselected_user", "True");
+                File.Create(Path.Combine(buildDir, "nsp", "romfs", "preselected_user")).Close(); 
+                File.WriteAllText(Path.Combine(buildDir, "nsp", "romfs", "preselected_user"), (preselecteduserCheck.IsChecked == true ? "True" : "False"));
 
                 //options_switch.yy creation can you believe this shit actually works
-                if (!Directory.Exists($"{projDir}\\options\\switch"))
-                    Directory.CreateDirectory($"{projDir}\\options\\switch");
+                if (!Directory.Exists(Path.Combine(projDir, "options", "switch")))
+                    Directory.CreateDirectory(Path.Combine(projDir, "options", "switch"));
 
-                if (File.Exists($"{projDir}\\options\\switch\\options_switch.yy") && existingoptionsCheck.IsChecked == true)
+                if (File.Exists(Path.Combine(projDir, "options", "switch", "options_switch.yy")) && existingoptionsCheck.IsChecked == true)
                     trace("INFO", "Using existing options_switch.yy...");
                 else
                 {
-                    if (File.Exists($"{projDir}\\options\\switch\\options_switch.yy"))
+                    if (File.Exists(Path.Combine(projDir, "options", "switch", "options_switch.yy")))
                     {
                         trace("WARN", "Existing options_switch.yy found, backing up incase of user error...");
-                        File.Copy($"{projDir}\\options\\switch\\options_switch.yy", $"{projDir}\\options\\switch\\options_switch.bak", true);
+                        File.Copy(Path.Combine(projDir, "options", "switch", "options_switch.yy"), Path.Combine(projDir, "options", "switch", "options_switch.bak"), true);
                     }
                     else if (existingoptionsCheck.IsChecked == true)
                         trace("WARN", "Existing options checked, but there's no options_switch.yy dingus.");
 
                     trace("INFO", "Creating options_switch.yy...");
                     //ok so funny thing is all fields we can modify are actually universal for both 2024 and whatever came before, iPhones are AWESOME!
+                    //lowkey should refactor this to only have one, it's the exact same code for both except for class
                     if (selectedRuntime.Contains("2024"))
                     {
                         //default for now, we're gonna add some stuff later for it
@@ -973,13 +971,13 @@ namespace ZeusNX
                             option_switch_allow_debug_output = debugCheck.IsChecked == true ? true : false,
                             option_switch_enable_fileaccess_checking = fileaccessCheck.IsChecked == true ? true : false,
                             option_switch_interpolate_pixels = interpolateCheck.IsChecked == true ? true : false,
-                            option_switch_project_nmeta = $"{projDir}\\options\\switch\\application.nmeta", //default path, honestly this is supposed to NOT be used since NintendoSDK is kinda GULP behind locked doors. we're using other stuff for nsp metadata anyways.
+                            option_switch_project_nmeta = Path.Combine(projDir, "options", "switch", "application.nmeta"), //default path, honestly this is supposed to NOT be used since NintendoSDK is kinda GULP behind locked doors. we're using other stuff for nsp metadata anyways.
                             option_switch_scale = scaleCheck.IsChecked == true ? 0 : 1, //0 is keep aspect ration, 1 is full scale.
-                            option_switch_splash_screen = $"{projDir}\\options\\switch\\splash.png", //if one is used i guess, but that kinda ignores our own toggle. think about it melia.
+                            option_switch_splash_screen = Path.Combine(projDir, "options", "switch", "splash.png"), //if one is used i guess, but that kinda ignores our own toggle. think about it melia.
                             option_switch_texture_page = texturesizesel.SelectedItem as string, //there's only 7 options i'll deal with that in the project settings tab
                             option_switch_use_splash = splashCheck.IsChecked == true ? true : false //i s'pose
                         };
-                        File.WriteAllText($"{projDir}\\options\\switch\\options_switch.yy", JsonConvert.SerializeObject(options, Formatting.Indented));
+                        File.WriteAllText(Path.Combine(projDir, "options", "switch", "options_switch.yy"), JsonConvert.SerializeObject(options, Formatting.Indented));
                     }
                     else
                     {
@@ -989,13 +987,13 @@ namespace ZeusNX
                             option_switch_allow_debug_output = debugCheck.IsChecked == true ? true : false,
                             option_switch_enable_fileaccess_checking = fileaccessCheck.IsChecked == true ? true : false,
                             option_switch_interpolate_pixels = interpolateCheck.IsChecked == true ? true : false,
-                            option_switch_project_nmeta = $"{projDir}\\options\\switch\\application.nmeta", //default path, honestly this is supposed to NOT be used since NintendoSDK is kinda GULP behind locked doors. we're using other stuff for nsp metadata anyways.
+                            option_switch_project_nmeta = Path.Combine(projDir, "options", "switch", "application.nmeta"), //default path, honestly this is supposed to NOT be used since NintendoSDK is kinda GULP behind locked doors. we're using other stuff for nsp metadata anyways.
                             option_switch_scale = scaleCheck.IsChecked == true ? 0 : 1, //0 is keep aspect ration, 1 is full scale.
-                            option_switch_splash_screen = $"{projDir}\\options\\switch\\splash.png", //if one is used i guess, but that kinda ignores our own toggle. think about it melia.
+                            option_switch_splash_screen = Path.Combine(projDir, "options", "switch", "splash.png"), //if one is used i guess, but that kinda ignores our own toggle. think about it melia.
                             option_switch_texture_page = texturesizesel.SelectedItem as string, //there's only 7 options i'll deal with that in the project settings tab
                             option_switch_use_splash = splashCheck.IsChecked == true ? true : false //i s'pose
                         };
-                        File.WriteAllText($"{projDir}\\options\\switch\\options_switch.yy", JsonConvert.SerializeObject(options, Formatting.Indented));
+                        File.WriteAllText(Path.Combine(projDir, "options", "switch", "options_switch.yy"), JsonConvert.SerializeObject(options, Formatting.Indented));
                     }
                 }
 
@@ -1020,9 +1018,9 @@ namespace ZeusNX
                 foreach (var lang in selLanguages)
                 {
                     if (sameicoCheck.IsChecked == true)
-                        File.Copy(icoPaths["AmericanEnglish"], $"{buildDir}\\nsp\\control\\icon_{lang}.dat", true);
+                        File.Copy(icoPaths["AmericanEnglish"], Path.Combine(buildDir, "nsp", "control", $"icon_{lang}.dat"), true);
                     else
-                        File.Copy(icoPaths[lang], $"{buildDir}\\nsp\\control\\icon_{lang}.dat", true);
+                        File.Copy(icoPaths[lang], Path.Combine(buildDir, "nsp", "control", $"icon_{lang}.dat"), true);
                 }
 
                 //copy over splash if toggle is set
@@ -1030,7 +1028,7 @@ namespace ZeusNX
                 {
                     trace("INFO", "Copying over splash...");
                     var bitmap = gamesplash.Source as Bitmap;
-                    using (var stream = File.OpenWrite($"{buildDir}\\nsp\\romfs\\splash.png"))
+                    using (var stream = File.OpenWrite(Path.Combine(buildDir, "nsp", "romfs", "splash.png")))
                     {
                         bitmap.Save(stream);
                     }
@@ -1063,11 +1061,11 @@ namespace ZeusNX
                     SeedForPseudoDeviceId = $"0x{titleID}"
                 };
                 XmlSerializer serializer = new XmlSerializer(typeof(Application));
-                using (FileStream fs = new FileStream($"{buildDir}\\tmp\\control.xml", FileMode.Create))
+                using (FileStream fs = new FileStream(Path.Combine(buildDir, "tmp", "control.xml"), FileMode.Create))
                     serializer.Serialize(fs, nacpXML);
 
-                string hptnacpArgs = $"-i \"{buildDir}\\tmp\\control.xml\" -o \"{buildDir}\\nsp\\control\\control.nacp\" -a createnacp";
-                if (await runExternalTool("Tools\\hptnacp.exe", hptnacpArgs, "HPTNACP") != 0)
+                string hptnacpArgs = $"-i \"{Path.Combine(buildDir, "tmp", "control.xml")}\" -o \"{Path.Combine(buildDir, "nsp", "control", "control.nacp")}\" -a createnacp";
+                if (await runExternalTool(Path.Combine("Tools", platform, $"hptnacp{(platform == "windows" ? ".exe" : "")}"), hptnacpArgs, "HPTNACP") != 0)
                 {
                     failed = true;
                     return;
@@ -1076,11 +1074,11 @@ namespace ZeusNX
 
                 //pack nsp
                 trace("INFO", "Building NSP...");
-                string hpArgs = $"-k \"{keyPath}\" --tempdir \"{buildDir}\\hactmp\" --backupdir \"{buildDir}\\cache\" --ncadir \"{buildDir}\\cache\\nca\" --nspdir \"{buildDir}\" --exefsdir \"{buildDir}\\nsp\\exefs\" --controldir \"{buildDir}\\nsp\\control\" --logodir \"{buildDir}\\nsp\\logo\" --romfsdir \"{buildDir}\\nsp\\romfs\"";
+                string hpArgs = $"-k \"{keyPath}\" --tempdir \"{Path.Combine(buildDir, "hactmp")}\" --backupdir \"{Path.Combine(buildDir, "cache")}\" --ncadir \"{Path.Combine(buildDir, "cache", "nca")}\" --nspdir \"{buildDir}\" --exefsdir \"{Path.Combine(buildDir, "nsp", "exefs")}\" --controldir \"{Path.Combine(buildDir, "nsp", "control")}\" --logodir \"{Path.Combine(buildDir, "nsp", "logo")}\" --romfsdir \"{Path.Combine(buildDir, "nsp", "romfs")}\"";
                 //if (offlineManualPath.Text != null && offlineManualPath.Text != string.Empty)
                 //    hpArgs += $" --htmldocdir \"{offlineManualPath.Text}\"";
                 hpArgs += $" --titleid \"{titleID}\"";
-                if (await runExternalTool("Tools\\hacbrewpack.exe", hpArgs, "HBP") != 0)
+                if (await runExternalTool(Path.Combine("Tools", platform, $"hacbrewpack{(platform == "windows" ? ".exe" : "")}"), hpArgs, "HBP") != 0)
                 {
                     failed = true;
                     return;
@@ -1089,16 +1087,16 @@ namespace ZeusNX
 
                 //cleanup
                 trace("INFO", "Restoring GMAssetCompiler.dll");
-                File.Delete($"{runtimePath}{compilerPath}\\GMAssetCompiler.dll");
-                File.Copy($"{runtimePath}{compilerPath}\\GMAssetCompiler.bak", $"{runtimePath}{compilerPath}\\GMAssetCompiler.dll");
-                File.Delete($"{runtimePath}{compilerPath}\\GMAssetCompiler.bak");
+                File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}");
+                File.Copy($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}", $"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}");
+                File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}");
                 trace("INFO", "Deleting all temp files...");
-                if (Directory.Exists($"{buildDir}\\tmp"))
-                    Directory.Delete($"{buildDir}\\tmp", true);
-                if (Directory.Exists($"{buildDir}\\cache"))
-                    Directory.Delete($"{buildDir}\\cache", true);
-                if (Directory.Exists($"{buildDir}\\nsp"))
-                    Directory.Delete($"{buildDir}\\nsp", true);
+                if (Directory.Exists(Path.Combine(buildDir, "tmp")))
+                    Directory.Delete(Path.Combine(buildDir, "tmp"), true);
+                if (Directory.Exists(Path.Combine(buildDir, "cache")))
+                    Directory.Delete(Path.Combine(buildDir, "cache"), true);
+                if (Directory.Exists(Path.Combine(buildDir, "nsp")))
+                    Directory.Delete(Path.Combine(buildDir, "nsp"), true);
                 try
                 {
                     if (Directory.Exists(buildDir))
@@ -1160,18 +1158,30 @@ namespace ZeusNX
 
         private async Task<int> runCompiler(string runtimePath, string projPath, string projName, string buildDir, string config, bool isPreprocess)
         {
+            string prefabPath = string.Empty;
+            switch (platform)
+            {
+                case "windows": 
+                    prefabPath = Path.Combine("C:", "ProgramData", "GameMakerStudio2", "Prefabs");
+                    break;
+                case "osx":
+                    prefabPath = "/" + Path.Combine("Users", "Shared", "GameMakerStudio2", "Prefabs");
+                    break;
+                    
+            }
+
             string absolutePath = Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory);
-            string args = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{projName}\" /td=\"{buildDir}\\tmp\" /cd=\"{buildDir}\\cache\" /rtp=\"{runtimePath.Remove(runtimePath.Length - 1)}\" ";
+            string args = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{projName}\" /td=\"{Path.Combine(buildDir, "tmp")}\" /cd=\"{Path.Combine(buildDir, "cache")}\" /rtp=\"{runtimePath.Remove(runtimePath.Length - 1)}\" ";
             if (enablePrefab)
-                args += "/prefabs=\"C:\\ProgramData\\GameMakerStudio2\\Prefabs\" ";
-            args += $"/m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /cfg=\"{config}\" /o=\"{absolutePath}{buildDir}\\nsp\\romfs\" \"{projPath}\" ";
+                args += "/prefabs=\"" + prefabPath + "\" ";
+            args += $"/m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /cfg=\"{config}\" /o=\"{Path.Combine(absolutePath, buildDir, "nsp", "romfs")}\" \"{projPath}\" ";
 
             trace("INFO", $"GMAC ARGS: {args}");
             //trace("DEBUG", $"runCompiler args, runtimePath-{runtimePath}, projPath-{projPath}, projName-{projName}, config-{config}, isPreprocess-{(isPreprocess ? "true" : "false")}");
 
-            if (isPreprocess) args += $"/preprocess=\"{buildDir}\\cache\"";
+            if (isPreprocess) args += $"/preprocess=\"{Path.Combine(buildDir, "cache")}\"";
 
-            return await runExternalTool($"{runtimePath}{compilerPath}\\GMAssetCompiler.exe", args, "GMAC");
+            return await runExternalTool($"{runtimePath}{Path.Combine(compilerPath, $"GMAssetCompiler{(platform == "windows" ? ".exe" : "")}")}", args, "GMAC"); //atleast test
         }
 
         private bool verifyTitleID(string titleID)
