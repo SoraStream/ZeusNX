@@ -3,11 +3,13 @@ A simple enough tool to compile GameMaker: Studio 2 games for your Nintendo Swit
 
 ## Currently this tool supports the current runtimes:
 #### Monthly
+    - 2023.8.1.148
     - 2023.8.2.152
     - 2023.11.1.160
     - 2024.14.3.260
     - 2024.14.4.268
 #### LTS
+    - 2022.0.1.30
     - 2022.0.3.99
 Make sure to read the notes in the runtime downloader for any issues i've noticed!
 ## Prerequisites
