@@ -101,6 +101,7 @@ namespace ZeusNX
         }
         public void trace(string type, string message)
         {
+            if (message == null || message == "" || message == string.Empty) return;
             try
             {
                 logbox.Text += $"[{type}]: {message}\n";
@@ -1143,7 +1144,7 @@ namespace ZeusNX
                 };
                 using var process = new Process { StartInfo = psi };
                 process.OutputDataReceived += (s, e) => { if (e.Data != null) Dispatcher.UIThread.InvokeAsync(() => trace(prefix, e.Data)); };
-                process.ErrorDataReceived += (s, e) => { if (e.Data != null) Dispatcher.UIThread.InvokeAsync(() => trace($"{prefix}ERR", e.Data)); };
+                //process.ErrorDataReceived += (s, e) => { if (e.Data != null) Dispatcher.UIThread.InvokeAsync(() => trace($"{prefix}ERR", e.Data)); };
 
                 process.Start();
                 process.BeginOutputReadLine();
