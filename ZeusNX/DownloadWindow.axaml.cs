@@ -36,6 +36,10 @@ public class YYRuntimeMetadata : IRuntimeItem
     public string ReleaseNotesURL { get; set; }
     public string BaseURL { get; set; }
     public string WinBaseURL { get; set; }
+    public string OSXx64BaseUrl  { get; set; }
+    public string OSXarm64BaseUrl { get; set; }
+    public string Linuxx64BaseUrl { get; set; }
+    public string Linuxarm64BaseUrl { get; set; }
     public bool IsInstalled { get; set; }
 
     public string DisplayVersion => Version;
@@ -121,11 +125,17 @@ public partial class DownloadWindow : Window
                     if (Double.Parse($"{title.Split('.')[0]}.{title.Split('.')[1]}") <= 2022.4 && Double.Parse($"{title.Split('.')[0]}.{title.Split('.')[1]}") != 2022.11 && runtype == 0) continue;
                     var enclosure = item.SelectSingleNode("enclosure");
                     if (enclosure == null) continue;
-                    var WinBase = enclosure.Attributes["url"]?.Value;
+                    string WinBase = string.Empty, OSXx64Base = string.Empty, OSXarm64Base = string.Empty, Linuxx64Base = string.Empty, Linuxarm64Base = string.Empty;
                     if (Int32.Parse(title.Split('.')[0]) >= 2023)
                     {
                         if (!title.Contains("2023.1"))
+                        {
                             WinBase = enclosure.SelectSingleNode("module[@name='base-module-windows-x64']").Attributes["url"]?.Value;
+                            OSXx64Base = enclosure.SelectSingleNode("module[@name='base-module-osx-x64']").Attributes["url"]?.Value;
+                            OSXarm64Base = enclosure.SelectSingleNode("module[@name='base-module-osx-arm64']").Attributes["url"]?.Value;
+                            Linuxx64Base = enclosure.SelectSingleNode("module[@name='base-module-linux-x64']").Attributes["url"]?.Value;
+                            Linuxarm64Base = enclosure.SelectSingleNode("module[@name='base-module-linux-arm64']").Attributes["url"]?.Value;
+                        }
                     }
                     string rawDate = item["pubDate"]?.InnerText ?? "";
                     string cleanDate = DateTime.TryParse(rawDate, out var dt) ? dt.ToShortDateString() : rawDate;
@@ -153,6 +163,10 @@ public partial class DownloadWindow : Window
                         Date = cleanDate,
                         BaseURL = enclosure.Attributes["url"]?.Value,
                         WinBaseURL = WinBase,
+                        OSXx64BaseUrl =  OSXx64Base,
+                        OSXarm64BaseUrl =  OSXarm64Base,
+                        Linuxx64BaseUrl =  Linuxx64Base,
+                        Linuxarm64BaseUrl =  Linuxarm64Base,
                         ReleaseNotesURL = item["comments"]?.InnerText,
                         IsInstalled = Directory.Exists(rp)
                     });
@@ -244,7 +258,8 @@ public partial class DownloadWindow : Window
                 YYRuntimeMetadata data = (RuntimeList.SelectedItem as YYRuntimeMetadata)!;
                 string installPath = string.Empty;
                 string baseName = string.Empty;
-                string winmodName = string.Empty;
+                string modName = string.Empty;
+                string modURL = string.Empty;
                 bool pre20232 = false;
                 bool lts = false;
                 if (data.BaseURL == data.WinBaseURL)
@@ -258,8 +273,38 @@ public partial class DownloadWindow : Window
                 baseName = baseName.Split("/")[1];
                 if (!pre20232)
                 {
-                    winmodName = data.WinBaseURL.Replace("https://", "");
-                    winmodName = winmodName.Split("/")[1];
+                    switch (MainWindow.platform)
+                    {
+                        case "windows":
+                            modName = data.WinBaseURL.Replace("https://", "");
+                            modURL = data.WinBaseURL;
+                            break;
+                        case "osx":
+                            if (MainWindow.architecture.ToString() == "x64")
+                            {
+                                modName = data.OSXx64BaseUrl.Replace("https://", "");
+                                modURL = data.OSXx64BaseUrl;
+                            }
+                            else
+                            {
+                                modName = data.OSXarm64BaseUrl.Replace("https://", "");
+                                modURL = data.OSXarm64BaseUrl;
+                            }
+                            break;
+                        case "linux":
+                            if (MainWindow.architecture.ToString() == "x64")
+                            {
+                                modName = data.Linuxx64BaseUrl.Replace("https://", "");
+                                modURL = data.Linuxx64BaseUrl;
+                            }
+                            else
+                            {
+                                modName = data.Linuxarm64BaseUrl.Replace("https://", "");
+                                modURL = data.Linuxarm64BaseUrl;
+                            }
+                            break;
+                    }
+                    modName = modName.Split("/")[1];
                 }
                 //paths!
                 switch (MainWindow.platform)
@@ -268,7 +313,7 @@ public partial class DownloadWindow : Window
                         installPath = Path.Combine("C:", "ProgramData", $"GameMakerStudio2{(lts ? "-LTS" : "")}", "Cache", "runtimes");
                         break;
                     case "osx":
-                        installPath = "/" + Path.Combine("Users", "Shared", $"GameMakerStudio2{(lts ? "-LTS" : "")}", "Cache", "runtimes");
+                        installPath = "/" + Path.Combine("Users", "Shared", $"GameMakerStudio2{(lts ? "-LTS" : "")}", "Cache", "runtimes", "zarfa").Replace("zarfa", "");
                         break;
                 }
                 
@@ -277,11 +322,11 @@ public partial class DownloadWindow : Window
                 {
                     //base
                     await DownloadFileAsync(client, data.BaseURL, Path.Combine(cachePath, baseName), 0, 50);
-                    await DownloadFileAsync(client, data.WinBaseURL, Path.Combine(cachePath, winmodName), 50, 100);
+                    await DownloadFileAsync(client, modURL, Path.Combine(cachePath, modName), 50, 100);
                     DownProgress.IsIndeterminate = true;
                     Directory.CreateDirectory(Path.Combine(cachePath, $"runtime-{data.Version}"));
                     await ExtractRuntime(Path.Combine(cachePath, baseName), Path.Combine(cachePath, $"runtime-{data.Version}"), YYMD5.CalculateZipPassword(baseName));
-                    await ExtractRuntime(Path.Combine(cachePath, winmodName), Path.Combine(cachePath, $"runtime-{data.Version}"), YYMD5.CalculateZipPassword(winmodName));
+                    await ExtractRuntime(Path.Combine(cachePath, modName), Path.Combine(cachePath, $"runtime-{data.Version}"), YYMD5.CalculateZipPassword(modName));
                 }
                 else
                 {
@@ -293,7 +338,7 @@ public partial class DownloadWindow : Window
                 MainWindow.CopyDirectory(Path.Combine(cachePath, $"runtime-{data.Version}"), $"{installPath}runtime-{data.Version}", true);
                 File.Delete(Path.Combine(cachePath, baseName));
                 if (!pre20232)
-                    File.Delete(Path.Combine(cachePath, winmodName));
+                    File.Delete(Path.Combine(cachePath, modName));
                 Directory.Delete(Path.Combine(cachePath, $"runtime-{data.Version}"), true);
                 selected.IsInstalled = true;
                 DownProgress.IsIndeterminate = false;
