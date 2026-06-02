@@ -57,12 +57,13 @@ namespace ZeusNX
         {
             InitializeComponent();
             InitDict();
+            initConfig();
+            loadConfig();
             PopulateRuntimes();
             PopulateMetadata();
             if (metalist.SelectedItem != null)
                 LoadMetadata(null, null);
-            trace("INFO", $"Welcome to ZeusNX, Version {ZeusNXVersion}");
-            trace("DEBUG", $"Running on {platform}, {architecture.ToString().ToLower()}");
+            trace("INFO", $"Welcome to ZeusNX, Version {ZeusNXVersion} ({platform}, {architecture.ToString().ToLower()})");
             trace("DEBUG", $"Asset Compiler Path Is: {compilerPath}");
         }
 
@@ -144,6 +145,9 @@ namespace ZeusNX
             }
             
             Directory.CreateDirectory("Runners");
+            Directory.CreateDirectory(Path.Combine("Runners", "gmmonthly"));
+            Directory.CreateDirectory(Path.Combine("Runners", "gmlts"));
+            Directory.CreateDirectory(Path.Combine("Runners", "gmbeta"));
             Directory.CreateDirectory("Data");
             Directory.CreateDirectory(Path.Combine("Data", "Metadata"));
             Directory.CreateDirectory(Path.Combine("Data", "Icons"));
@@ -184,6 +188,22 @@ namespace ZeusNX
             titleauthor.Text = titleAuthors["AmericanEnglish"];
             texturesizesel.ItemsSource = txtPageList;
             texturesizesel.SelectedIndex = 3;
+        }
+
+        private void initConfig()
+        {
+            if (File.Exists(Path.Combine("Data", "config.ini"))) return;
+            
+            var ini = new IniFile();
+            ini["Config"]["UseProgramData"] = false;
+            ini.Save(Path.Combine("Data", "config.ini"));
+        }
+
+        private void loadConfig()
+        {
+            var ini = new IniFile();
+            ini.Load(Path.Combine("Data", "config.ini"));
+            cbUseProgramData.IsChecked = ini["Config"]["UseProgramData"].ToBool();
         }
 
         private void OnOpenDownloaderClicked(object sender, RoutedEventArgs e)
@@ -453,12 +473,18 @@ namespace ZeusNX
                         break;
                 }
 
+                if (cbUseProgramData.IsChecked == false)
+                {
+                    basePath = Path.Combine("Runners", "gmmonthly");
+                    ltsPath = Path.Combine("Runners", "gmlts");
+                    betaPath = Path.Combine("Runners", "gmbeta");
+                }
 
                 //mainline
                 if (Directory.Exists(basePath))
                     runtimes.AddRange(Directory.GetDirectories(basePath).Select(Path.GetFileName).Select(name => $"{name.Replace("runtime-", "")} | Mainline").ToList());
                 else
-                    trace("ERROR", "No Mainline Runtimes Found!");
+                    trace("WARN", "No Mainline Runtimes Found!");
 
                 //LTS
                 if (Directory.Exists(ltsPath))
@@ -472,11 +498,11 @@ namespace ZeusNX
                 else
                     trace("WARN", "No Beta Runtimes Found!");
 
-                //Nocturnus
-                if (Directory.Exists(devPath))
-                    runtimes.AddRange(Directory.GetDirectories(devPath).Select(Path.GetFileName).Select(name => $"{name.Replace("runtime-", "")} | Dev").ToList());
-                else
-                    trace("WARN", "No Dev Runtimes Found!");
+                //Nocturnus stop bothering with this lol
+                //if (Directory.Exists(devPath))
+                //    runtimes.AddRange(Directory.GetDirectories(devPath).Select(Path.GetFileName).Select(name => $"{name.Replace("runtime-", "")} | Dev").ToList());
+                //else
+                //    trace("WARN", "No Dev Runtimes Found!");
 
                 runtimesel.ItemsSource = runtimes;
             }
@@ -582,7 +608,7 @@ namespace ZeusNX
                 SameIcons = sameicoCheck.IsChecked == true,
                 EnableScreenShots = screenshotCheck.IsChecked == true,
                 EnableVideoCapture = recordCheck.IsChecked == true,
-                OfflineManualPath = offlineManualPath.Text,
+                OfflineManualPath = "", //offlineManualPath.Text,
                 AmericanEnglish = aeCheck.IsChecked == true,
                 CanadianFrench = cfCheck.IsChecked == true,
                 LatinAmericanSpanish = saCheck.IsChecked == true,
@@ -668,7 +694,7 @@ namespace ZeusNX
                 sameicoCheck.IsChecked = meta.SameIcons;
                 screenshotCheck.IsChecked = meta.EnableScreenShots;
                 recordCheck.IsChecked = meta.EnableVideoCapture;
-                offlineManualPath.Text = meta.OfflineManualPath;
+                //offlineManualPath.Text = meta.OfflineManualPath;
 
                 //lang
                 aeCheck.IsChecked = meta.AmericanEnglish;
@@ -1212,6 +1238,18 @@ namespace ZeusNX
             }
 
             return true;
+        }
+
+        private void saveOption(object sender, RoutedEventArgs e)
+        {
+            CheckBox cb = (CheckBox)sender;
+            var ini = new IniFile();
+            ini.Load(Path.Combine("Data", "config.ini"));
+            trace("DEBUG", $"Name: {cb.Name}, Checked: {cb.IsChecked == true}");
+            ini["Config"][cb.Name.Replace("cb", "")] = cb.IsChecked == true;
+            ini.Save(Path.Combine("Data", "config.ini"));
+            if (cb.Name == "cbUseProgramData")
+                PopulateRuntimes();
         }
     }
 }
