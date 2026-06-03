@@ -19,6 +19,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Transactions;
 using System.Xml;
+using ZeusNX.Ini;
 using ZeusNX.YoYoMD5;
 
 namespace ZeusNX;
@@ -87,6 +88,9 @@ public partial class DownloadWindow : Window
             byte[] byteStream;
             string xml = String.Empty;
             var list = new List<YYRuntimeMetadata>();
+            var ini = new IniFile();
+            ini.Load(Path.Combine("Data", "config.ini"));
+            bool usePD = ini["Config"]["UseProgramData"].ToBool();
 
             switch (runtype)
             {
@@ -106,7 +110,7 @@ public partial class DownloadWindow : Window
             {
                 //isinstalled stuff
                 string rp = string.Empty;
-                string lts = runtype == 1 ? "-LTS" : string.Empty;
+                string lts = runtype == 1 ? (!usePD ? "lts" : "-LTS") : (!usePD ? "monthly" : string.Empty);
                 
                 XmlDocument doc = new XmlDocument();
                 doc.LoadXml(xml);
@@ -154,8 +158,12 @@ public partial class DownloadWindow : Window
                             rp = "/" + Path.Combine("Users", "Shared", endingDir);
                             break;
                         case "linux":
+                            rp = Path.Combine("Runners", "gm" + lts, $"runtime-{title}");
                             break;
                     }
+                    
+                    if (!usePD)
+                        rp = Path.Combine("Runners", "gm" + lts, $"runtime-{title}");
                     
                     list.Add(new YYRuntimeMetadata
                     {
@@ -306,16 +314,29 @@ public partial class DownloadWindow : Window
                     }
                     modName = modName.Split("/")[1];
                 }
+
+                var ini = new IniFile();
+                ini.Load(Path.Combine("Data", "config.ini"));
+
+                bool downloadToPD = ini["Config"]["UseProgramData"].ToBool();
                 //paths!
                 switch (MainWindow.platform)
                 {
                     case "windows":
-                        installPath = Path.Combine("C:", "ProgramData", $"GameMakerStudio2{(lts ? "-LTS" : "")}", "Cache", "runtimes");
+                        installPath = Path.Combine("C:", "ProgramData", $"GameMakerStudio2{(lts ? "-LTS" : "")}", "Cache", "runtimes", "zarfa").Replace("zarfa", "");
                         break;
                     case "osx":
                         installPath = "/" + Path.Combine("Users", "Shared", $"GameMakerStudio2{(lts ? "-LTS" : "")}", "Cache", "runtimes", "zarfa").Replace("zarfa", "");
                         break;
+                    case "linux":
+                        installPath = Path.Combine("Runners", "gm" + (lts ? "lts" : "monthly"), "zarfa").Replace("zarfa", "");
+                        break;
                 }
+                
+                if (!downloadToPD)
+                    installPath = Path.Combine("Runners", "gm" + (lts ? "lts" : "monthly"), "zarfa").Replace("zarfa", "");
+                
+                
                 
                 using var client = new HttpClient();
                 if (!pre20232)
