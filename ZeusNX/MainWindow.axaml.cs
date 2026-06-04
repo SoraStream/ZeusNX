@@ -192,6 +192,9 @@ namespace ZeusNX
 
         private void initConfig()
         {
+            if (platform == "linux")
+                cbUseProgramData.IsVisible = false;
+            
             if (File.Exists(Path.Combine("Data", "config.ini"))) return;
             
             var ini = new IniFile();
@@ -765,8 +768,8 @@ namespace ZeusNX
             {            
                 saveLang();
                 buildnsp.IsEnabled = false;
-                //TODO uhhh add detection for pre 2.3 projects and pre 2024 projects, formats for the options_switch.yy is different
                 //support latest mainline release (2024.14.4.286) and latest lts (2022.0.3.99) on release, MAYBE beta for that one undertale thing. leave nocturnus alone since that's internal yoyogames shit
+                //gulp i wish i could add lts2026 support but it kinda don't work to compile
                 trace("INFO", "Build START!");
                 //start by checking if shit is filled out
                 var projPath = projpath.Text;
@@ -808,17 +811,23 @@ namespace ZeusNX
                 selectedRuntime = $"runtime-{selectedRuntime}";
                 string runtimePath = string.Empty;
                 string commonPath = Path.Combine($"GameMakerStudio2{(branch == "Mainline" ? "" : $"-{branch}")}", "Cache", "runtimes", selectedRuntime);
-                switch (platform)
+                string localVersion = branch switch
                 {
-                    case "windows":
-                        runtimePath = Path.Combine("C:", "ProgramData", commonPath, "zarfa").Replace("zarfa", "");
-                        break;
-                    case "osx":
-                        runtimePath = "/" + Path.Combine("Users", "Shared", commonPath, "zarfa").Replace("zarfa", "");
-                        break;
-                    case "linux":
-                        break;
-                }
+                    "Mainline" => "monthly",
+                    "LTS" => "lts",
+                    "Beta" => "beta",
+                    "Dev" => "dev"
+                };
+
+                runtimePath = platform switch
+                {
+                    "windows" => Path.Combine("C:", "ProgramData", commonPath, "zarfa").Replace("zarfa", ""),
+                    "osx" => "/" + Path.Combine("Users", "Shared", commonPath, "zarfa").Replace("zarfa", ""),
+                    "linux" => Path.Combine("Runners", $"gm{localVersion}", "zarfa").Replace("zarfa", "")
+                };
+                
+                if (cbUseProgramData.IsChecked == false)
+                    runtimePath = Path.Combine("Runners", $"gm{localVersion}", selectedRuntime, "zarfa").Replace("zarfa", "");
 
                 if (!Directory.Exists(runtimePath))
                 {
@@ -830,7 +839,7 @@ namespace ZeusNX
                 if (!Directory.Exists(Path.Combine("Runners",  selectedRuntime)))
                 {
                     trace("ERROR", $"{selectedRuntime} files not found! Either follow the guide or check the Github repo to make sure you have it.");
-                    failed = true;
+                    failed = false;
                     return;
                 }
 

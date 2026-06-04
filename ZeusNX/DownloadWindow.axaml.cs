@@ -361,6 +361,14 @@ public partial class DownloadWindow : Window
                 if (!pre20232)
                     File.Delete(Path.Combine(cachePath, modName));
                 Directory.Delete(Path.Combine(cachePath, $"runtime-{data.Version}"), true);
+                
+                //file permission stuff for unix/linux systems
+                if (MainWindow.platform == "osx" || MainWindow.platform == "linux")
+                {
+                    File.SetUnixFileMode(Path.Combine($"{installPath}runtime-{data.Version}", "bin", "assetcompiler", MainWindow.platform, MainWindow.architecture.ToString().ToLower(), "GMAssetCompiler"), 
+                        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                        UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+                }
                 selected.IsInstalled = true;
                 DownProgress.IsIndeterminate = false;
                 DownloadBtn.Content = "Installed";
