@@ -15,6 +15,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Transactions;
@@ -288,7 +289,7 @@ public partial class DownloadWindow : Window
                             modURL = data.WinBaseURL;
                             break;
                         case "osx":
-                            if (MainWindow.architecture.ToString() == "x64")
+                            if (MainWindow.architecture == Architecture.X64)
                             {
                                 modName = data.OSXx64BaseUrl.Replace("https://", "");
                                 modURL = data.OSXx64BaseUrl;
@@ -300,7 +301,7 @@ public partial class DownloadWindow : Window
                             }
                             break;
                         case "linux":
-                            if (MainWindow.architecture.ToString() == "x64")
+                            if (MainWindow.architecture == Architecture.X64)
                             {
                                 modName = data.Linuxx64BaseUrl.Replace("https://", "");
                                 modURL = data.Linuxx64BaseUrl;
