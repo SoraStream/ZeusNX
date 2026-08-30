@@ -740,7 +740,7 @@ namespace ZeusNX
 
         private async void DeleteMetadata(object sender, RoutedEventArgs e)
         {
-            string filePath = $"Data\\Metadata\\{metalist.SelectedItem}.znx";
+            string filePath = $"Data/Metadata/{metalist.SelectedItem}.znx";
             if (File.Exists(filePath))
             {
                 try
