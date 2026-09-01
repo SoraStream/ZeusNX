@@ -4,10 +4,11 @@ namespace ZeusNX.Metadata
 {
     internal class ZeusNXMetadata
     {
-        public string ZNXVer { get; } = "1.0.0RC6";
+        public string ZNXVer { get; } = "1.0.1";
         public string TitleID { get; set; }
         public string Version { get; set; }
         public string ProjectPath { get; set; }
+        public string RuntimeVerison { get; set; }
         public string KeysPath { get; set; }
         public string ConfigName { get; set; }
         public string SplashPath { get; set; }

@@ -91,8 +91,10 @@
 									Click="OnRefreshRuntimesClicked"
 									Margin="5,0,0,0"/>
 						</Grid>
-						<Button Content="Download Runtime" Click="OnOpenDownloaderClicked"/>
-						<TextBlock Text="Quick options:" FontWeight="Bold" Margin="0,5,0,0"/>
+						<Grid ColumnDefinitions="Auto, Auto" Margin="0,5,0,0">
+							<Button	Content="Download Runtimes" Click="OnOpenDownloaderClicked"/>
+							<Button Grid.Column="1" Name="btnInstallKeys" Content="Install prod.keys" Click="InstallKeys"></Button>
+						</Grid>
 						<TextBlock Text="Saved Metadata:" Margin="0,5,0,0"/>
 						<ComboBox Name="metalist" HorizontalAlignment="Stretch" SelectedIndex="0"/>
 						<StackPanel Orientation="Horizontal" Spacing="5" Margin="0,5,0,0">
@@ -129,11 +131,10 @@
 						<TextBlock Text="Configuration name:"/>
 						<TextBox Name="projconf" Watermark="Default" Text="Default"/>
 
-						<TextBlock Text="Keys file:"/>
-						<Grid ColumnDefinitions="*, 40">
+						<!--<Grid ColumnDefinitions="*, 40">
 							<TextBox Name="keypath" Watermark="C:\path\to\prod.keys"/>
 							<Button Grid.Column="1" Content="..." HorizontalAlignment="Right" Click="OnBrowseKeysClicked"/>
-						</Grid>
+						</Grid>-->
 					</StackPanel>
 				</Grid>
 			</TabItem>

@@ -271,7 +271,7 @@ public partial class DownloadWindow : Window
                 string modURL = string.Empty;
                 bool pre20232 = false;
                 bool lts = false;
-                if (data.BaseURL == data.WinBaseURL)
+                if (data.WinBaseURL == "")
                     pre20232 = true;
                 if (data.Version.Contains("2022.0"))
                     lts = true;

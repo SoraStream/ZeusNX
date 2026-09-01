@@ -1,4 +1,4 @@
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
@@ -19,12 +19,13 @@ using ZeusNX.Ini;
 using ZeusNX.Metadata;
 using ZeusNX.NMeta;
 using ZeusNX.YYOptions;
+using System.Net.NetworkInformation;
 
 namespace ZeusNX
 {
     public partial class MainWindow : Window
     {
-        private string ZeusNXVersion = "1.0.0";
+        private string ZeusNXVersion = "1.0.1β1";
         private int langIndex = 0;
         public static string platform = "windows";
         public static Architecture architecture = RuntimeInformation.OSArchitecture; //also figure this out later, there will only be arm64 and x64 builds
@@ -103,6 +104,9 @@ namespace ZeusNX
         public void trace(string type, string message)
         {
             if (message == null || message == "" || message == string.Empty) return;
+#if RELEASE
+            if (type == "DEBUG") return;
+#endif
             try
             {
                 logbox.Text += $"[{type}]: {message}\n";
@@ -194,6 +198,12 @@ namespace ZeusNX
         {
             if (platform == "linux")
                 cbUseProgramData.IsVisible = false;
+
+            if (File.Exists("Data/prod.keys"))
+            {
+                btnInstallKeys.Content = "Keys installed";
+                btnInstallKeys.IsEnabled = false;
+            }
             
             if (File.Exists(Path.Combine("Data", "config.ini"))) return;
             
@@ -408,28 +418,28 @@ namespace ZeusNX
             }
         }
 
-        private async void OnBrowseKeysClicked(object sender, RoutedEventArgs e)
-        {
-            var toplevel = TopLevel.GetTopLevel(this);
-            var file = await toplevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-            {
-                Title = "Select prod.Keys",
-                FileTypeFilter = new List<FilePickerFileType>
-                {
-                    new FilePickerFileType("Switch Keys")
-                    {
-                        Patterns = new List<string> { "*.keys" }
-                    }
-                },
-                AllowMultiple = false
-            });
-
-            if (file.Count > 0)
-            {
-                keypath.Text = file[0].Path.LocalPath;
-                trace("INFO", $"Selected keys: {keypath.Text}");
-            }
-        }
+        //private async void OnBrowseKeysClicked(object sender, RoutedEventArgs e)
+        //{
+        //    var toplevel = TopLevel.GetTopLevel(this);
+        //    var file = await toplevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        //    {
+        //        Title = "Select prod.Keys",
+        //        FileTypeFilter = new List<FilePickerFileType>
+        //        {
+        //            new FilePickerFileType("Switch Keys")
+        //            {
+        //                Patterns = new List<string> { "*.keys" }
+        //            }
+        //        },
+        //        AllowMultiple = false
+        //    });
+        //
+        //    if (file.Count > 0)
+        //    {
+        //        keypath.Text = file[0].Path.LocalPath;
+        //        trace("INFO", $"Selected keys: {keypath.Text}");
+        //    }
+        //}
 
         private void OnGenTitleIDClicked(object sender, RoutedEventArgs e)
         {
@@ -584,6 +594,73 @@ namespace ZeusNX
             }
         }
 
+        private async void InstallKeys(object sender, RoutedEventArgs e)
+        {
+            var topLevel = TopLevel.GetTopLevel(this);
+            var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Load Prod.keys",
+                FileTypeFilter = new[] { new FilePickerFileType("Key file") { Patterns = new[] { "*.keys" } } }
+            });
+
+            if (files.Count > 0 && files != null)
+            {
+                Dictionary<string, string> keyFile = new Dictionary<string, string>();
+                Dictionary<int, string> allKeys = new Dictionary<int, string>();
+                string[] keysToCheck = ["master_kek_source_06",
+                                        "master_kek_source_07",
+                                        "master_kek_source_08",
+                                        "master_kek_source_09",
+                                        "master_kek_source_0a",
+                                        "master_kek_source_0b",
+                                        "master_kek_source_0c",
+                                        "master_kek_source_0d",
+                                        "master_kek_source_0e",
+                                        "master_kek_source_0f",
+                                        "master_kek_source_10",
+                                        "master_kek_source_11",
+                                        "master_kek_source_12",
+                                        "master_kek_source_13",
+                                        "master_kek_source_14",
+                                        "master_kek_source_15"];
+
+                trace("DEBUG", files[0].TryGetLocalPath());
+                string[] rawFile = File.ReadAllLines(files[0].TryGetLocalPath());
+                int track = 0;
+                foreach (var key in rawFile)
+                {
+                    keyFile.Add(key.Split(" = ")[0], key.Split(" = ")[1]);
+                    allKeys.Add(track, key.Split(" = ")[0]);
+                    trace("DEBUG", $"{key.Split(" = ")[0]} = {keyFile[key.Split(" = ")[0]]}");
+                    track++;
+                }
+
+                for (int i = 0; i < keysToCheck.Length; i++)
+                {
+                    string str = keyFile[keysToCheck[i]];
+                    if (str.EndsWith("00") || str.Length > 32)
+                        str = str.Remove(str.Length - 2);
+                    trace("DEBUG", $"Before: {keyFile[keysToCheck[i]]}");
+                    trace("DEBUG", $"After: {str}");
+                    keyFile[keysToCheck[i]] = str;
+
+                    trace("DEBUG", $"check {keyFile[keysToCheck[i]]}");
+                }
+                string[] finalKeys = new string[keyFile.Count];
+
+                for (int i = 0; i < keyFile.Count; i++)
+                {
+                    finalKeys[i] = $"{allKeys[i]} = {keyFile[allKeys[i]]}";
+                }
+
+                if (File.Exists("Data/prod.keys"))
+                    File.Delete("Data/prod.keys");
+                File.Create("Data/prod.keys").Close();
+
+                File.WriteAllLines("Data/prod.keys", finalKeys);
+            }
+        }
+
         private async void SaveMetadata(object sender, RoutedEventArgs e)
         {
             saveLang();
@@ -597,7 +674,8 @@ namespace ZeusNX
                 TitleID = titleid.Text,
                 Version = titleversion.Text,
                 ProjectPath = projpath.Text,
-                KeysPath = keypath.Text,
+                RuntimeVerison = runtimesel.SelectedItem.ToString().Split(" | ")[0],
+                //KeysPath = keypath.Text,
                 ConfigName = projconf.Text,
                 SplashPath = splashPath,
                 ExistingOptionsCheck = existingoptionsCheck.IsChecked == true,
@@ -685,7 +763,7 @@ namespace ZeusNX
                 titleid.Text = meta.TitleID;
                 titleversion.Text = meta.Version;
                 projpath.Text = meta.ProjectPath;
-                keypath.Text = meta.KeysPath;
+                //keypath.Text = meta.KeysPath;
                 projconf.Text = meta.ConfigName;
                 preselecteduserCheck.IsChecked = meta.RequireAccount;
                 debugCheck.IsChecked = meta.DebugOutput;
@@ -732,6 +810,25 @@ namespace ZeusNX
                     trace("ERROR", $"Failed to load splash: {ex.Message}");
                 }
 
+                //try to auto select runtime
+                if (meta.RuntimeVerison != null)
+                {
+                    var runtimeList = runtimesel.ItemsSource;
+                    int count = 0;
+                    foreach (var item in runtimeList)
+                    {
+                        string str = item.ToString();
+                        if (str.Contains(meta.RuntimeVerison))
+                        {
+                            runtimesel.SelectedIndex = count;
+                            break;
+                        }
+                        count++;
+                    }
+                }
+                else
+                    trace("WARN", "Failed to get runtime version, resave metadata!");
+
                 updateUI(); // Refresh the display for the current language
                 trace("INFO", $"ZNX file loaded from {filePath}.");
                 //}
@@ -765,7 +862,8 @@ namespace ZeusNX
         {
             bool failed = false;
             try
-            {            
+            {
+                var stopwatch = Stopwatch.StartNew();
                 saveLang();
                 buildnsp.IsEnabled = false;
                 //support latest mainline release (2024.14.4.286) and latest lts (2022.0.3.99) on release, MAYBE beta for that one undertale thing. leave nocturnus alone since that's internal yoyogames shit
@@ -776,12 +874,12 @@ namespace ZeusNX
                 var titleID = titleid.Text == null ? null : titleid.Text.ToLower();
                 var titleVer = titleversion.Text == null ? "0.0.0" : titleversion.Text;
                 var projConfig = projconf.Text == null ? "Default" : projconf.Text;
-                var keyPath = keypath.Text;
+                var keyPath = "Data/prod.keys"; //this is just gonna be hardcoded here since you "install" the keys anyways. if i was smart i'd just parse the keys needed and just feed that as an argument instead of having the entire file
                 List<string> selLanguages = getSelectedLanguages();
 
-                if (keyPath == null || !keyPath.Contains(".keys"))
+                if (!File.Exists(keyPath))
                 {
-                    trace("ERROR", "Keys not found!!!");
+                    trace("ERROR", "Keys are not installed!!!");
                     failed = true;
                     return;
                 }
@@ -1101,7 +1199,7 @@ namespace ZeusNX
                     serializer.Serialize(fs, nacpXML);
 
                 string hptnacpArgs = $"-i \"{Path.Combine(buildDir, "tmp", "control.xml")}\" -o \"{Path.Combine(buildDir, "nsp", "control", "control.nacp")}\" -a createnacp";
-                if (await runExternalTool(Path.Combine("Tools", platform, $"hptnacp{(platform == "windows" ? ".exe" : "")}"), hptnacpArgs, "HPTNACP") != 0)
+                if (await runExternalTool(Path.Combine("Tools", platform, $"hptnacp{(platform == "windows" ? ".exe" : "")}"), hptnacpArgs, "HPTNACP", true, true) != 0)
                 {
                     failed = true;
                     return;
@@ -1114,7 +1212,7 @@ namespace ZeusNX
                 //if (offlineManualPath.Text != null && offlineManualPath.Text != string.Empty)
                 //    hpArgs += $" --htmldocdir \"{offlineManualPath.Text}\"";
                 hpArgs += $" --titleid \"{titleID}\"";
-                if (await runExternalTool(Path.Combine("Tools", platform, $"hacbrewpack{(platform == "windows" ? ".exe" : "")}"), hpArgs, "HBP") != 0)
+                if (await runExternalTool(Path.Combine("Tools", platform, $"hacbrewpack{(platform == "windows" ? ".exe" : "")}"), hpArgs, "HBP", false, true) != 0)
                 {
                     failed = true;
                     return;
@@ -1133,6 +1231,8 @@ namespace ZeusNX
                     Directory.Delete(Path.Combine(buildDir, "cache"), true);
                 if (Directory.Exists(Path.Combine(buildDir, "nsp")))
                     Directory.Delete(Path.Combine(buildDir, "nsp"), true);
+                stopwatch.Stop();
+                TimeSpan time = stopwatch.Elapsed;
                 try
                 {
                     if (Directory.Exists(buildDir))
@@ -1150,7 +1250,7 @@ namespace ZeusNX
                 {
                     trace("ERROR", $"Failed to open build dir: {ex.Message}");
                 }
-                trace("INFO", "Build Complete!");
+                trace("INFO", $"Build Complete in {time.TotalSeconds:F2}s!");
             }
             catch (Exception ex)
             {
@@ -1164,7 +1264,7 @@ namespace ZeusNX
             }
         }
 
-        private async Task<int> runExternalTool(string fileName, string args, string prefix)
+        private async Task<int> runExternalTool(string fileName, string args, string prefix, bool outputLog = false, bool outputError = false)
         {
             return await Task.Run(() =>
             {
@@ -1178,8 +1278,10 @@ namespace ZeusNX
                     RedirectStandardError = true
                 };
                 using var process = new Process { StartInfo = psi };
-                process.OutputDataReceived += (s, e) => { if (e.Data != null) Dispatcher.UIThread.InvokeAsync(() => trace(prefix, e.Data)); };
-                //process.ErrorDataReceived += (s, e) => { if (e.Data != null) Dispatcher.UIThread.InvokeAsync(() => trace($"{prefix}ERR", e.Data)); };
+                if (outputLog)
+                    process.OutputDataReceived += (s, e) => { if (e.Data != null) Dispatcher.UIThread.InvokeAsync(() => trace(prefix, e.Data)); };
+                if (outputError)
+                    process.ErrorDataReceived += (s, e) => { if (e.Data != null) Dispatcher.UIThread.InvokeAsync(() => trace($"{prefix}ERR", e.Data)); };
 
                 process.Start();
                 process.BeginOutputReadLine();
@@ -1213,11 +1315,11 @@ namespace ZeusNX
             args += $"/m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /cfg=\"{config}\" /o=\"{Path.Combine(absolutePath, buildDir, "nsp", "romfs")}\" \"{projPath}\" ";
 
             trace("INFO", $"GMAC ARGS: {args}");
-            //trace("DEBUG", $"runCompiler args, runtimePath-{runtimePath}, projPath-{projPath}, projName-{projName}, config-{config}, isPreprocess-{(isPreprocess ? "true" : "false")}");
+            trace("DEBUG", $"runCompiler args, runtimePath-{runtimePath}, projPath-{projPath}, projName-{projName}, config-{config}, isPreprocess-{(isPreprocess ? "true" : "false")}");
 
             if (isPreprocess) args += $"/preprocess=\"{Path.Combine(buildDir, "cache")}\"";
 
-            return await runExternalTool($"{runtimePath}{Path.Combine(compilerPath, $"GMAssetCompiler{(platform == "windows" ? ".exe" : "")}")}", args, "GMAC"); //atleast test
+            return await runExternalTool($"{runtimePath}{Path.Combine(compilerPath, $"GMAssetCompiler{(platform == "windows" ? ".exe" : "")}")}", args, "GMAC", true, false); //atleast test
         }
 
         private bool verifyTitleID(string titleID)
