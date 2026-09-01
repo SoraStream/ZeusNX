@@ -91,7 +91,7 @@
 									Click="OnRefreshRuntimesClicked"
 									Margin="5,0,0,0"/>
 						</Grid>
-						<Grid ColumnDefinitions="Auto, Auto" Margin="0,5,0,0">
+						<Grid ColumnDefinitions="Auto, Auto">
 							<Button	Content="Download Runtimes" Click="OnOpenDownloaderClicked"/>
 							<Button Grid.Column="1" Name="btnInstallKeys" Content="Install prod.keys" Click="InstallKeys"></Button>
 						</Grid>

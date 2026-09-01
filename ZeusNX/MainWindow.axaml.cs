@@ -637,14 +637,21 @@ namespace ZeusNX
 
                 for (int i = 0; i < keysToCheck.Length; i++)
                 {
-                    string str = keyFile[keysToCheck[i]];
-                    if (str.EndsWith("00") || str.Length > 32)
-                        str = str.Remove(str.Length - 2);
-                    trace("DEBUG", $"Before: {keyFile[keysToCheck[i]]}");
-                    trace("DEBUG", $"After: {str}");
-                    keyFile[keysToCheck[i]] = str;
+                    try
+                    {
+                        string str = keyFile[keysToCheck[i]];
+                        if (str.EndsWith("00") || str.Length > 32)
+                            str = str.Remove(str.Length - 2);
+                        trace("DEBUG", $"Before: {keyFile[keysToCheck[i]]}");
+                        trace("DEBUG", $"After: {str}");
+                        keyFile[keysToCheck[i]] = str;
 
-                    trace("DEBUG", $"check {keyFile[keysToCheck[i]]}");
+                        trace("DEBUG", $"check {keyFile[keysToCheck[i]]}");
+                    }
+                    catch (Exception exception)
+                    {
+                        trace("ERROR", $"Exception: {exception.Message}");
+                    }
                 }
                 string[] finalKeys = new string[keyFile.Count];
 
@@ -658,6 +665,9 @@ namespace ZeusNX
                 File.Create("Data/prod.keys").Close();
 
                 File.WriteAllLines("Data/prod.keys", finalKeys);
+
+                btnInstallKeys.Content = "Keys installed";
+                btnInstallKeys.IsEnabled = false;
             }
         }
 
