@@ -42,6 +42,7 @@ public class YYRuntimeMetadata : IRuntimeItem
     public string OSXarm64BaseUrl { get; set; }
     public string Linuxx64BaseUrl { get; set; }
     public string Linuxarm64BaseUrl { get; set; }
+    public string ZnxUrl { get; set; }
     public bool IsInstalled { get; set; }
 
     public string DisplayVersion => Version;
@@ -102,96 +103,98 @@ public partial class DownloadWindow : Window
                     xml = await client.GetStringAsync("https://gms.yoyogames.com/Zeus-Runtime-LTS.rss");
                     break;
                 case 2:
-                    xml = await client.GetStringAsync("https://sorastream.dev/zeusnx/files.json"); //lol this is not xml brah
+                    xml = await client.GetStringAsync("https://gms.yoyogames.com/Zeus-Runtime-NuBeta.rss");
                     break;
             }
+            //get zeusnx feed for displaying shit
+            string znxJson = await client.GetStringAsync("https://sorastream.dev/zeusnx/files.json");
+            List<ZNXRuntimeMetadata> znxFeed = JsonConvert.DeserializeObject<List<ZNXRuntimeMetadata>>(znxJson);
 
-            //official yyg stuff
-            if (runtype < 2)
+            //isinstalled stuff
+            string rp = string.Empty;
+            string lts = runtype == 1 ? (!usePD ? "lts" : "-LTS") : (!usePD ? "monthly" : string.Empty);
+
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+            XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
+            nsmgr.AddNamespace("sparkle", "http://www.andymatuschak.org/xml-namespaces/sparkle");
+
+            var items = doc.GetElementsByTagName("item");
+
+            foreach (XmlNode item in items)
             {
-                //isinstalled stuff
-                string rp = string.Empty;
-                string lts = runtype == 1 ? (!usePD ? "lts" : "-LTS") : (!usePD ? "monthly" : string.Empty);
-                
-                XmlDocument doc = new XmlDocument();
-                doc.LoadXml(xml);
-                XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
-                nsmgr.AddNamespace("sparkle", "http://www.andymatuschak.org/xml-namespaces/sparkle");
-
-                var items = doc.GetElementsByTagName("item");
-
-                foreach (XmlNode item in items)
+                //right depending on the runtime the base-module stuff doesn't exist, basically anything pre 2023.2. lts is infact, pre 2023.2.
+                string title = item["title"]?.InnerText.Replace("Version ", "");
+                //if it's below 2022, don't even bother rn.
+                if (title.Split('.')[0] == "2") continue;
+                //check if there's a znx runtime that matches
+                bool match = false;
+                string znxUrl = "";
+                foreach (var thing in znxFeed)
                 {
-                    //right depending on the runtime the base-module stuff doesn't exist, basically anything pre 2023.2. lts is infact, pre 2023.2.
-                    string title = item["title"]?.InnerText.Replace("Version ", "");
-                    //if it's below 2022, don't even bother rn.
-                    if (title.Split('.')[0] == "2") continue;
-                    //blacklist 2022.3 and lower since that uses an older build system, and i haven't researched how to patch that yet
-                    if (Double.Parse($"{title.Split('.')[0]}.{title.Split('.')[1]}") <= 2022.4 && Double.Parse($"{title.Split('.')[0]}.{title.Split('.')[1]}") != 2022.11 && runtype == 0) continue;
-                    var enclosure = item.SelectSingleNode("enclosure");
-                    if (enclosure == null) continue;
-                    string WinBase = string.Empty, OSXx64Base = string.Empty, OSXarm64Base = string.Empty, Linuxx64Base = string.Empty, Linuxarm64Base = string.Empty;
-                    if (Int32.Parse(title.Split('.')[0]) >= 2023)
+                    if (title == thing.DisplayVersion)
                     {
-                        if (!title.Contains("2023.1"))
-                        {
-                            WinBase = enclosure.SelectSingleNode("module[@name='base-module-windows-x64']").Attributes["url"]?.Value;
-                            OSXx64Base = enclosure.SelectSingleNode("module[@name='base-module-osx-x64']").Attributes["url"]?.Value;
-                            OSXarm64Base = enclosure.SelectSingleNode("module[@name='base-module-osx-arm64']").Attributes["url"]?.Value;
-                            Linuxx64Base = enclosure.SelectSingleNode("module[@name='base-module-linux-x64']").Attributes["url"]?.Value;
-                            Linuxarm64Base = enclosure.SelectSingleNode("module[@name='base-module-linux-arm64']").Attributes["url"]?.Value;
-                        }
+                        znxUrl = $"https://sorastream.dev/zeusnx/{thing.File}";
                     }
-                    string rawDate = item["pubDate"]?.InnerText ?? "";
-                    string cleanDate = DateTime.TryParse(rawDate, out var dt) ? dt.ToShortDateString() : rawDate;
-                    if (!File.Exists(Path.Combine(cachePath, $"release-notes-{title}.json")))
+                }
+                if (znxUrl == "") continue;
+                //blacklist 2022.3 and lower since that uses an older build system, and i haven't researched how to patch that yet
+                if (Double.Parse($"{title.Split('.')[0]}.{title.Split('.')[1]}") <= 2022.4 && Double.Parse($"{title.Split('.')[0]}.{title.Split('.')[1]}") != 2022.11 && runtype == 0) continue;
+                var enclosure = item.SelectSingleNode("enclosure");
+                if (enclosure == null) continue;
+                string WinBase = string.Empty, OSXx64Base = string.Empty, OSXarm64Base = string.Empty, Linuxx64Base = string.Empty, Linuxarm64Base = string.Empty;
+                if (Int32.Parse(title.Split('.')[0]) >= 2023)
+                {
+                    if (!title.Contains("2023.1"))
                     {
-                        byteStream = await client.GetByteArrayAsync(item["comments"]?.InnerText ?? "");
-                        File.WriteAllBytesAsync(Path.Combine(cachePath, $"release-notes-{title}.json"), byteStream);
+                        WinBase = enclosure.SelectSingleNode("module[@name='base-module-windows-x64']").Attributes["url"]?.Value;
+                        OSXx64Base = enclosure.SelectSingleNode("module[@name='base-module-osx-x64']").Attributes["url"]?.Value;
+                        OSXarm64Base = enclosure.SelectSingleNode("module[@name='base-module-osx-arm64']").Attributes["url"]?.Value;
+                        Linuxx64Base = enclosure.SelectSingleNode("module[@name='base-module-linux-x64']").Attributes["url"]?.Value;
+                        Linuxarm64Base = enclosure.SelectSingleNode("module[@name='base-module-linux-arm64']").Attributes["url"]?.Value;
                     }
-                    string endingDir = Path.Combine($"GameMakerStudio2{lts}", "Cache", "runtimes", $"runtime-{title}");
-                    switch (MainWindow.platform)
-                    {
-                        case "windows":
-                            rp = Path.Combine("C:", "ProgramData", endingDir);
-                            break;
-                        case "osx":
-                            rp = "/" + Path.Combine("Users", "Shared", endingDir);
-                            break;
-                        case "linux":
-                            rp = Path.Combine("Runners", "gm" + lts, $"runtime-{title}");
-                            break;
-                    }
-                    
-                    if (!usePD)
+                }
+                string rawDate = item["pubDate"]?.InnerText ?? "";
+                string cleanDate = DateTime.TryParse(rawDate, out var dt) ? dt.ToShortDateString() : rawDate;
+                if (!File.Exists(Path.Combine(cachePath, $"release-notes-{title}.json")))
+                {
+                    byteStream = await client.GetByteArrayAsync(item["comments"]?.InnerText ?? "");
+                    File.WriteAllBytesAsync(Path.Combine(cachePath, $"release-notes-{title}.json"), byteStream);
+                }
+                string endingDir = Path.Combine($"GameMakerStudio2{lts}", "Cache", "runtimes", $"runtime-{title}");
+                switch (MainWindow.platform)
+                {
+                    case "windows":
+                        rp = Path.Combine("C:", "ProgramData", endingDir);
+                        break;
+                    case "osx":
+                        rp = "/" + Path.Combine("Users", "Shared", endingDir);
+                        break;
+                    case "linux":
                         rp = Path.Combine("Runners", "gm" + lts, $"runtime-{title}");
-                    
-                    list.Add(new YYRuntimeMetadata
-                    {
-                        Version = item["title"]?.InnerText.Replace("Version ", ""),
-                        Date = cleanDate,
-                        BaseURL = enclosure.Attributes["url"]?.Value,
-                        WinBaseURL = WinBase,
-                        OSXx64BaseUrl =  OSXx64Base,
-                        OSXarm64BaseUrl =  OSXarm64Base,
-                        Linuxx64BaseUrl =  Linuxx64Base,
-                        Linuxarm64BaseUrl =  Linuxarm64Base,
-                        ReleaseNotesURL = item["comments"]?.InnerText,
-                        IsInstalled = Directory.Exists(rp)
-                    });
+                        break;
                 }
-                RuntimeList.ItemsSource = list.OrderByDescending(x => x.Date).ToList();
-                client.Dispose();
-            }
-            else
-            {
-                List<ZNXRuntimeMetadata> feed = JsonConvert.DeserializeObject<List<ZNXRuntimeMetadata>>(xml); //not xml here. maybe i should. change that var name.
-                foreach (var item in feed)
+
+                if (!usePD)
+                    rp = Path.Combine("Runners", "gm" + lts, $"runtime-{title}");
+
+                list.Add(new YYRuntimeMetadata
                 {
-                    item.IsInstalled = Directory.Exists(Path.Combine("Runners", $"runtime-{item.Name}"));
-                }
-                RuntimeList.ItemsSource = feed.OrderByDescending(x => x.Date);
+                    Version = item["title"]?.InnerText.Replace("Version ", ""),
+                    Date = cleanDate,
+                    BaseURL = enclosure.Attributes["url"]?.Value,
+                    WinBaseURL = WinBase,
+                    OSXx64BaseUrl =  OSXx64Base,
+                    OSXarm64BaseUrl =  OSXarm64Base,
+                    Linuxx64BaseUrl =  Linuxx64Base,
+                    Linuxarm64BaseUrl =  Linuxarm64Base,
+                    ZnxUrl = znxUrl,
+                    ReleaseNotesURL = item["comments"]?.InnerText,
+                    IsInstalled = Directory.Exists(rp)
+                });
             }
+            RuntimeList.ItemsSource = list.OrderByDescending(x => x.Date).ToList();
+            client.Dispose();
 
             VerTitle.Text = "Select a Runtime";
             PatchNotesText.Text = "";
@@ -226,13 +229,6 @@ public partial class DownloadWindow : Window
             DownloadBtn.Content = !selected.IsInstalled ? "Download" : "Installed";
             PatchNotesText.Text = raw.Trim();
         }
-        else if (RuntimeList.SelectedItem is ZNXRuntimeMetadata znxselected)
-        {
-            VerTitle.Text = "Version " + znxselected.Name;
-            DownloadBtn.IsEnabled = !znxselected.IsInstalled;
-            DownloadBtn.Content = !znxselected.IsInstalled ? "Download" : "Installed";
-            PatchNotesText.Text = znxselected.Note;
-        }
     }
 
     private async void OnDownloadClicked(object sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -242,27 +238,7 @@ public partial class DownloadWindow : Window
         DownProgress.Value = 0;
         try
         {
-            if (RuntimeList.SelectedItem is ZNXRuntimeMetadata znx)
-            {
-                string installPath = "Runners";
-                string uri = "https://sorastream.dev/zeusnx/";
-                string zipName = znx.File.Replace(".7z", "");
-                var client = new HttpClient();
-
-                await DownloadFileAsync(client, $"{uri}{znx.File}", Path.Combine(cachePath, znx.File), 0, 100);
-                DownProgress.IsIndeterminate = true;
-                Directory.CreateDirectory(Path.Combine(cachePath, $"znx{zipName}"));
-                await ExtractRuntime(Path.Combine(cachePath, znx.File), Path.Combine(cachePath, $"znx{zipName}"));
-                client.Dispose();
-                MainWindow.CopyDirectory(Path.Combine(cachePath, $"znx{zipName}"), Path.Combine(installPath, zipName), true);
-                File.Delete(Path.Combine(cachePath, znx.File));
-                Directory.Delete(Path.Combine(cachePath, $"znx{zipName}"), true);
-
-                znx.IsInstalled = true;
-                DownProgress.IsIndeterminate = false;
-                DownloadBtn.Content = "Installed";
-            }
-            else if (RuntimeList.SelectedItem is YYRuntimeMetadata selected)
+            if (RuntimeList.SelectedItem is YYRuntimeMetadata selected)
             {
                 YYRuntimeMetadata data = (RuntimeList.SelectedItem as YYRuntimeMetadata)!;
                 string installPath = string.Empty;
@@ -343,25 +319,34 @@ public partial class DownloadWindow : Window
                 if (!pre20232)
                 {
                     //base
-                    await DownloadFileAsync(client, data.BaseURL, Path.Combine(cachePath, baseName), 0, 50);
-                    await DownloadFileAsync(client, modURL, Path.Combine(cachePath, modName), 50, 100);
+                    await DownloadFileAsync(client, data.BaseURL, Path.Combine(cachePath, baseName), 0, 33);
+                    await DownloadFileAsync(client, modURL, Path.Combine(cachePath, modName), 33, 66);
+                    await DownloadFileAsync(client, data.ZnxUrl, Path.Combine(cachePath, data.Version + ".7z"), 66, 100);
                     DownProgress.IsIndeterminate = true;
                     Directory.CreateDirectory(Path.Combine(cachePath, $"runtime-{data.Version}"));
+                    Directory.CreateDirectory(Path.Combine(cachePath, $"{data.Version}"));
                     await ExtractRuntime(Path.Combine(cachePath, baseName), Path.Combine(cachePath, $"runtime-{data.Version}"), YYMD5.CalculateZipPassword(baseName));
                     await ExtractRuntime(Path.Combine(cachePath, modName), Path.Combine(cachePath, $"runtime-{data.Version}"), YYMD5.CalculateZipPassword(modName));
+                    await ExtractRuntime(Path.Combine(cachePath, $"{data.Version}.7z"), Path.Combine(cachePath, data.Version));
                 }
                 else
                 {
-                    await DownloadFileAsync(client, data.BaseURL, Path.Combine(cachePath, baseName), 0, 100);
+                    await DownloadFileAsync(client, data.BaseURL, Path.Combine(cachePath, baseName), 0, 50);
+                    await DownloadFileAsync(client, data.ZnxUrl, Path.Combine(cachePath, $"{data.Version}.7z"), 50, 100);
                     DownProgress.IsIndeterminate = true;
                     Directory.CreateDirectory(Path.Combine(cachePath, $"runtime-{data.Version}"));
+                    Directory.CreateDirectory(Path.Combine(cachePath, $"{data.Version}"));
                     await ExtractRuntime(Path.Combine(cachePath, baseName), Path.Combine(cachePath, $"runtime-{data.Version}"), YYMD5.CalculateZipPassword(baseName));
+                    await ExtractRuntime(Path.Combine(cachePath, $"{data.Version}.7z"), Path.Combine(cachePath, $"{data.Version}"));
                 }
                 MainWindow.CopyDirectory(Path.Combine(cachePath, $"runtime-{data.Version}"), $"{installPath}runtime-{data.Version}", true);
+                MainWindow.CopyDirectory(Path.Combine(cachePath, $"{data.Version}"), $"Runners/runtime-{data.Version}", true);
                 File.Delete(Path.Combine(cachePath, baseName));
+                File.Delete(Path.Combine(cachePath, $"{data.Version}.7z"));
                 if (!pre20232)
                     File.Delete(Path.Combine(cachePath, modName));
                 Directory.Delete(Path.Combine(cachePath, $"runtime-{data.Version}"), true);
+                Directory.Delete(Path.Combine(cachePath, $"{data.Version}"), true);
                 
                 //file permission stuff for unix/linux systems
                 if (MainWindow.platform == "osx" || MainWindow.platform == "linux")
@@ -370,6 +355,7 @@ public partial class DownloadWindow : Window
                         UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
                         UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
                 }
+
                 selected.IsInstalled = true;
                 DownProgress.IsIndeterminate = false;
                 DownloadBtn.Content = "Installed";
@@ -466,7 +452,7 @@ public partial class DownloadWindow : Window
                 case "LTS":
                     LoadRuntimes(1);
                     break;
-                case "ZeusNX":
+                case "Beta":
                     LoadRuntimes(2);
                     break;
             }
