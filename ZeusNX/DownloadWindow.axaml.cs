@@ -44,6 +44,7 @@ public class YYRuntimeMetadata : IRuntimeItem
     public string Linuxarm64BaseUrl { get; set; }
     public string ZnxUrl { get; set; }
     public bool IsInstalled { get; set; }
+    public bool IsZNXInstalled { get; set; }
 
     public string DisplayVersion => Version;
     public string DisplaySubtitle => Date;
@@ -69,11 +70,13 @@ public class ZNXRuntimeMetadata : IRuntimeItem
 
 public partial class DownloadWindow : Window
 {
+    private readonly MainWindow? _window;
     string cachePath = Path.Combine("Data", "Cache");
     bool init = false;
-    public DownloadWindow()
+    public DownloadWindow(MainWindow window)
     {
         InitializeComponent();
+        _window = window;
         //var trace = traceAction;
         LoadRuntimes(0);
         init = true;
@@ -155,7 +158,9 @@ public partial class DownloadWindow : Window
                     }
                 }
                 string rawDate = item["pubDate"]?.InnerText ?? "";
-                string cleanDate = DateTime.TryParse(rawDate, out var dt) ? dt.ToShortDateString() : rawDate;
+                DateTime cookedDate;
+                DateTime.TryParse(rawDate, out cookedDate);
+                string cleanDate = $"{cookedDate.Year}-{(cookedDate.Month <= 9 ? "0" + cookedDate.Month : cookedDate.Month)}-{(cookedDate.Day <= 9 ? "0" + cookedDate.Day : cookedDate.Day)}"; //DateTime.TryParse(rawDate, out var dt) ? dt.ToShortDateString() : rawDate;
                 if (!File.Exists(Path.Combine(cachePath, $"release-notes-{title}.json")))
                 {
                     byteStream = await client.GetByteArrayAsync(item["comments"]?.InnerText ?? "");
@@ -359,6 +364,7 @@ public partial class DownloadWindow : Window
                 selected.IsInstalled = true;
                 DownProgress.IsIndeterminate = false;
                 DownloadBtn.Content = "Installed";
+                _window.PopulateRuntimes();
             }
         }
         catch (Exception ex)

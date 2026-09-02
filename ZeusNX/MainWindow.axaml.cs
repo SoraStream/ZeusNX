@@ -19,7 +19,6 @@ using ZeusNX.Ini;
 using ZeusNX.Metadata;
 using ZeusNX.NMeta;
 using ZeusNX.YYOptions;
-using System.Net.NetworkInformation;
 
 namespace ZeusNX
 {
@@ -221,7 +220,7 @@ namespace ZeusNX
 
         private void OnOpenDownloaderClicked(object sender, RoutedEventArgs e)
         {
-            var downloadWin = new DownloadWindow();
+            var downloadWin = new DownloadWindow(this);
             downloadWin.ShowDialog(this);
         }
 
@@ -457,7 +456,7 @@ namespace ZeusNX
             titleid.Text = idVal.ToString("X16");
         }
 
-        private void PopulateRuntimes()
+        public void PopulateRuntimes()
         {
             var runtimes = new List<string>();
             try
@@ -650,7 +649,7 @@ namespace ZeusNX
                     }
                     catch (Exception exception)
                     {
-                        trace("WARN", $"Exception: {exception.Message}, probably an older keyset.");
+                        trace("DEBUG", $"Exception: {exception.Message}, probably an older keyset.");
                     }
                 }
                 string[] finalKeys = new string[keyFile.Count];
@@ -738,6 +737,7 @@ namespace ZeusNX
                 File.Create(filePath).Close();
                 await File.WriteAllTextAsync(filePath, json);
                 PopulateMetadata();
+                metalist.SelectedIndex = 0;
             }
             catch (Exception ex)
             {
