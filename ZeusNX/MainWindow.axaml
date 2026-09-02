@@ -180,6 +180,7 @@
 						<CheckBox Name="screenshotCheck" Content="Enable Screenshots?" IsChecked="True"/>
 						<CheckBox Name="recordCheck" Content="Enable Video Capture?" IsChecked="True"/>
 						<CheckBox Name="cbUseProgramData" Content="Use the runtimes bundled with GMS2?" Click="saveOption"/>
+						<CheckBox Name="cbUseGMCache" Content="Allow the Asset Compiler to keep a cache?" Click="saveOption"/>
 						<!--<TextBlock Text="Offline manual path:"/>
 						<TextBox IsEnabled="False" Name="offlineManualPath" PlaceholderText="Leave blank to have none."/>-->
 					</StackPanel>

@@ -24,7 +24,7 @@ namespace ZeusNX
 {
     public partial class MainWindow : Window
     {
-        private string ZeusNXVersion = "1.0.1β1";
+        private string ZeusNXVersion = "1.0.1β2";
         private int langIndex = 0;
         public static string platform = "windows";
         public static Architecture architecture = RuntimeInformation.OSArchitecture; //also figure this out later, there will only be arm64 and x64 builds
@@ -208,6 +208,7 @@ namespace ZeusNX
             
             var ini = new IniFile();
             ini["Config"]["UseProgramData"] = false;
+            ini["Config"]["UseGMCache"] = false;
             ini.Save(Path.Combine("Data", "config.ini"));
         }
 
@@ -216,6 +217,7 @@ namespace ZeusNX
             var ini = new IniFile();
             ini.Load(Path.Combine("Data", "config.ini"));
             cbUseProgramData.IsChecked = ini["Config"]["UseProgramData"].ToBool();
+            cbUseGMCache.IsChecked = ini["Config"]["UseGMCache"].ToBool();
         }
 
         private void OnOpenDownloaderClicked(object sender, RoutedEventArgs e)
@@ -1141,8 +1143,19 @@ namespace ZeusNX
                     }
                 }
 
-                trace("INFO", "Preprocessing GMS2 project...");
-                if (await runCompiler(runtimePath, projPath, projName, buildDir, projConfig, true) >= 2)
+                //check for cache toggle here
+                string cacheDir = String.Empty;
+                if (cbUseGMCache.IsChecked == true)
+                {
+                    if (Directory.Exists(Path.Combine("Cache", projName)))
+                        Directory.CreateDirectory(Path.Combine("Cache", projName));
+                    cacheDir = Path.Combine("Cache", projName);
+                }
+                else
+                    cacheDir = Path.Combine(buildDir, "cache");
+
+                    trace("INFO", "Preprocessing GMS2 project...");
+                if (await runCompiler(runtimePath, projPath, projName, buildDir, cacheDir, projConfig, true) >= 2)
                 {
                     failed = true;
                     return;
@@ -1150,7 +1163,7 @@ namespace ZeusNX
                 await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
 
                 trace("INFO", "Compiling GMS2 project...");
-                if (await runCompiler(runtimePath, projPath, projName, buildDir, projConfig, false) >= 2)
+                if (await runCompiler(runtimePath, projPath, projName, buildDir, cacheDir, projConfig, false) >= 2)
                 {
                     failed = true;
                     return;
@@ -1304,7 +1317,7 @@ namespace ZeusNX
             });
         }
 
-        private async Task<int> runCompiler(string runtimePath, string projPath, string projName, string buildDir, string config, bool isPreprocess)
+        private async Task<int> runCompiler(string runtimePath, string projPath, string projName, string buildDir, string cacheDir, string config, bool isPreprocess)
         {
             string prefabPath = string.Empty;
             switch (platform)
@@ -1315,11 +1328,13 @@ namespace ZeusNX
                 case "osx":
                     prefabPath = "/" + Path.Combine("Users", "Shared", "GameMakerStudio2", "Prefabs");
                     break;
-                    
+                case "linux":
+                    prefabPath = String.Empty; //i lowkey forgot about this here uhh Oops!
+                    break;               
             }
 
             string absolutePath = Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory);
-            string args = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{projName}\" /td=\"{Path.Combine(buildDir, "tmp")}\" /cd=\"{Path.Combine(buildDir, "cache")}\" /rtp=\"{runtimePath.Remove(runtimePath.Length - 1)}\" ";
+            string args = $"/c /v /zpex /mv=1 /iv=0 /rv=0 /bv=0 /j=9 /gn=\"{projName}\" /td=\"{Path.Combine(buildDir, "tmp")}\" /cd=\"{Path.Combine(absolutePath,cacheDir)}\" /rtp=\"{runtimePath.Remove(runtimePath.Length - 1)}\" ";
             if (enablePrefab)
                 args += "/prefabs=\"" + prefabPath + "\" ";
             args += $"/m=switch /tgt=144115188075855872 /cvm /bt=\"exe\" /rt=vm /cfg=\"{config}\" /o=\"{Path.Combine(absolutePath, buildDir, "nsp", "romfs")}\" \"{projPath}\" ";
