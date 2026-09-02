@@ -11,6 +11,7 @@ using SharpCompress.Common;
 using SharpCompress.Readers;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -195,7 +196,8 @@ public partial class DownloadWindow : Window
                     Linuxarm64BaseUrl =  Linuxarm64Base,
                     ZnxUrl = znxUrl,
                     ReleaseNotesURL = item["comments"]?.InnerText,
-                    IsInstalled = Directory.Exists(rp)
+                    IsInstalled = Directory.Exists(rp),
+                    IsZNXInstalled = Directory.Exists(Path.Combine("Runners", $"runtime-{title}"))
                 });
             }
             RuntimeList.ItemsSource = list.OrderByDescending(x => x.Date).ToList();
@@ -230,8 +232,15 @@ public partial class DownloadWindow : Window
             raw = raw.Replace("\\\"", "\"");
             raw = raw.Replace("\\t", "");
             VerTitle.Text = "Version " + selected.Version;
-            DownloadBtn.IsEnabled = !selected.IsInstalled;
-            DownloadBtn.Content = !selected.IsInstalled ? "Download" : "Installed";
+            DownloadBtn.IsEnabled = !selected.IsInstalled || !selected.IsZNXInstalled;
+            string btnstr = String.Empty;
+            if (selected.IsInstalled && selected.IsZNXInstalled)
+                btnstr = "Installed";
+            else if ((selected.IsInstalled && !selected.IsZNXInstalled) || (!selected.IsInstalled && selected.IsZNXInstalled))
+                btnstr = "Repair";
+            else
+                btnstr = "Download";
+            DownloadBtn.Content = btnstr;
             PatchNotesText.Text = raw.Trim();
         }
     }
@@ -317,39 +326,56 @@ public partial class DownloadWindow : Window
                 
                 if (!downloadToPD)
                     installPath = Path.Combine("Runners", "gm" + (lts ? "lts" : "monthly"), "zarfa").Replace("zarfa", "");
-                
-                
-                
+
                 using var client = new HttpClient();
                 if (!pre20232)
                 {
                     //base
-                    await DownloadFileAsync(client, data.BaseURL, Path.Combine(cachePath, baseName), 0, 33);
-                    await DownloadFileAsync(client, modURL, Path.Combine(cachePath, modName), 33, 66);
-                    await DownloadFileAsync(client, data.ZnxUrl, Path.Combine(cachePath, data.Version + ".7z"), 66, 100);
+                    if (!data.IsInstalled)
+                    {
+                        await DownloadFileAsync(client, data.BaseURL, Path.Combine(cachePath, baseName), 0, 33);
+                        await DownloadFileAsync(client, modURL, Path.Combine(cachePath, modName), 33, data.IsZNXInstalled ? 100 : 66);
+                    }
+                    if (!data.IsZNXInstalled)
+                        await DownloadFileAsync(client, data.ZnxUrl, Path.Combine(cachePath, data.Version + ".7z"), 66, 100);
                     DownProgress.IsIndeterminate = true;
                     Directory.CreateDirectory(Path.Combine(cachePath, $"runtime-{data.Version}"));
                     Directory.CreateDirectory(Path.Combine(cachePath, $"{data.Version}"));
-                    await ExtractRuntime(Path.Combine(cachePath, baseName), Path.Combine(cachePath, $"runtime-{data.Version}"), YYMD5.CalculateZipPassword(baseName));
-                    await ExtractRuntime(Path.Combine(cachePath, modName), Path.Combine(cachePath, $"runtime-{data.Version}"), YYMD5.CalculateZipPassword(modName));
-                    await ExtractRuntime(Path.Combine(cachePath, $"{data.Version}.7z"), Path.Combine(cachePath, data.Version));
+                    if (!data.IsInstalled)
+                    {
+                        await ExtractRuntime(Path.Combine(cachePath, baseName), Path.Combine(cachePath, $"runtime-{data.Version}"), YYMD5.CalculateZipPassword(baseName));
+                        await ExtractRuntime(Path.Combine(cachePath, modName), Path.Combine(cachePath, $"runtime-{data.Version}"), YYMD5.CalculateZipPassword(modName));
+                    }
+                    if (!data.IsZNXInstalled)
+                        await ExtractRuntime(Path.Combine(cachePath, $"{data.Version}.7z"), Path.Combine(cachePath, data.Version));
                 }
                 else
                 {
-                    await DownloadFileAsync(client, data.BaseURL, Path.Combine(cachePath, baseName), 0, 50);
-                    await DownloadFileAsync(client, data.ZnxUrl, Path.Combine(cachePath, $"{data.Version}.7z"), 50, 100);
+                    if (!data.IsInstalled)
+                        await DownloadFileAsync(client, data.BaseURL, Path.Combine(cachePath, baseName), 0, data.IsZNXInstalled ? 100 : 50);
+                    if (!data.IsZNXInstalled)
+                        await DownloadFileAsync(client, data.ZnxUrl, Path.Combine(cachePath, $"{data.Version}.7z"), 50, 100);
                     DownProgress.IsIndeterminate = true;
                     Directory.CreateDirectory(Path.Combine(cachePath, $"runtime-{data.Version}"));
                     Directory.CreateDirectory(Path.Combine(cachePath, $"{data.Version}"));
-                    await ExtractRuntime(Path.Combine(cachePath, baseName), Path.Combine(cachePath, $"runtime-{data.Version}"), YYMD5.CalculateZipPassword(baseName));
-                    await ExtractRuntime(Path.Combine(cachePath, $"{data.Version}.7z"), Path.Combine(cachePath, $"{data.Version}"));
+                    if (!data.IsInstalled)
+                        await ExtractRuntime(Path.Combine(cachePath, baseName), Path.Combine(cachePath, $"runtime-{data.Version}"), YYMD5.CalculateZipPassword(baseName));
+                    if (!data.IsZNXInstalled)
+                        await ExtractRuntime(Path.Combine(cachePath, $"{data.Version}.7z"), Path.Combine(cachePath, $"{data.Version}"));
                 }
-                MainWindow.CopyDirectory(Path.Combine(cachePath, $"runtime-{data.Version}"), $"{installPath}runtime-{data.Version}", true);
-                MainWindow.CopyDirectory(Path.Combine(cachePath, $"{data.Version}"), $"Runners/runtime-{data.Version}", true);
-                File.Delete(Path.Combine(cachePath, baseName));
-                File.Delete(Path.Combine(cachePath, $"{data.Version}.7z"));
-                if (!pre20232)
-                    File.Delete(Path.Combine(cachePath, modName));
+                if (!data.IsInstalled)
+                {
+                    MainWindow.CopyDirectory(Path.Combine(cachePath, $"runtime-{data.Version}"), $"{installPath}runtime-{data.Version}", true);
+                    File.Delete(Path.Combine(cachePath, baseName));
+                    if (!pre20232)
+                        File.Delete(Path.Combine(cachePath, modName));
+                }
+                if (!data.IsZNXInstalled)
+                {
+                    MainWindow.CopyDirectory(Path.Combine(cachePath, $"{data.Version}"), $"Runners/runtime-{data.Version}", true);
+                    File.Delete(Path.Combine(cachePath, $"{data.Version}.7z"));
+                }
+
                 Directory.Delete(Path.Combine(cachePath, $"runtime-{data.Version}"), true);
                 Directory.Delete(Path.Combine(cachePath, $"{data.Version}"), true);
                 
