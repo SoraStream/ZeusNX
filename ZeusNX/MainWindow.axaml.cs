@@ -650,7 +650,7 @@ namespace ZeusNX
                     }
                     catch (Exception exception)
                     {
-                        trace("ERROR", $"Exception: {exception.Message}");
+                        trace("WARN", $"Exception: {exception.Message}, probably an older keyset.");
                     }
                 }
                 string[] finalKeys = new string[keyFile.Count];

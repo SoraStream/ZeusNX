@@ -5,7 +5,8 @@
         Width="1200" Height="705"
 		MinWidth="1200" MinHeight="705"
 		CanResize="True"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+		RequestedThemeVariant="Dark">
 
 	<Window.Styles>
 		<Style Selector="Button.image-overlay">

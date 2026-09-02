@@ -4,7 +4,8 @@
         x:Class="ZeusNX.DownloadWindow"
 		CanResize="False"
         Title="Runtime Downloader" Width="850" Height="550"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterOwner"
+		RequestedThemeVariant="Dark">
 	<Window.Styles>
 		<Style Selector="TabItem">
 			<Setter Property="FontSize" Value="11"/>
