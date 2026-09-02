@@ -109,30 +109,30 @@
 					<StackPanel Grid.Column="4" Spacing="5">
 						<TextBlock Text="Project:"/>
 						<Grid ColumnDefinitions="*, 40">
-							<TextBox Name="projpath" Watermark="C:\path\to\proj.yyp"/>
+							<TextBox Name="projpath" PlaceholderText="C:\path\to\proj.yyp"/>
 							<Button Grid.Column="1" Content="..." HorizontalAlignment="Right" Click="OnBrowseProjectClicked"/>
 						</Grid>
 
 						<TextBlock Text="Title ID:"/>
 						<Grid ColumnDefinitions="*, 90">
-							<TextBox Name="titleid" MaxLength="16" TextChanged="OnTitleIdInput" Watermark="0000000000000000"/>
+							<TextBox Name="titleid" MaxLength="16" TextChanged="OnTitleIdInput" PlaceholderText="0000000000000000"/>
 							<Button Grid.Column="1" Content="Generate" HorizontalAlignment="Right" Click="OnGenTitleIDClicked"/>
 						</Grid>	
 
 						<TextBlock Text="Name:"/>
-						<TextBox Name="titlename" MaxLength="127" Watermark="GameMaker Runner"/>
+						<TextBox Name="titlename" MaxLength="127" PlaceholderText="GameMaker Runner"/>
 
 						<TextBlock Text="Author:"/>
-						<TextBox Name="titleauthor" MaxLength="63" Watermark="SoraStream"/>
+						<TextBox Name="titleauthor" MaxLength="63" PlaceholderText="SoraStream"/>
 
 						<TextBlock Text="Version:"/>
-						<TextBox Name="titleversion" MaxLength="15" Watermark="0.0.0"/>
+						<TextBox Name="titleversion" MaxLength="15" PlaceholderText="0.0.0"/>
 
 						<TextBlock Text="Configuration name:"/>
-						<TextBox Name="projconf" Watermark="Default" Text="Default"/>
+						<TextBox Name="projconf" PlaceholderText="Default" Text="Default"/>
 
 						<!--<Grid ColumnDefinitions="*, 40">
-							<TextBox Name="keypath" Watermark="C:\path\to\prod.keys"/>
+							<TextBox Name="keypath" PlaceholderText="C:\path\to\prod.keys"/>
 							<Button Grid.Column="1" Content="..." HorizontalAlignment="Right" Click="OnBrowseKeysClicked"/>
 						</Grid>-->
 					</StackPanel>
@@ -180,7 +180,7 @@
 						<CheckBox Name="recordCheck" Content="Enable Video Capture?" IsChecked="True"/>
 						<CheckBox Name="cbUseProgramData" Content="Use the runtimes bundled with GMS2?" Click="saveOption"/>
 						<!--<TextBlock Text="Offline manual path:"/>
-						<TextBox IsEnabled="False" Name="offlineManualPath" Watermark="Leave blank to have none."/>-->
+						<TextBox IsEnabled="False" Name="offlineManualPath" PlaceholderText="Leave blank to have none."/>-->
 					</StackPanel>
 				</Grid>
 			</TabItem>
