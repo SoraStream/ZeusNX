@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+using Avalonia.Metadata;
 using Avalonia.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -63,6 +64,8 @@ public class ZNXRuntimeMetadata : IRuntimeItem
     public string Note { get; set; }
     [JsonProperty("file")]
     public string File { get; set; }
+    [JsonProperty("private")]
+    public bool Private {  get; set; }
     public bool IsInstalled { get; set; }
 
     public string DisplayVersion => Name;
@@ -107,17 +110,40 @@ public partial class DownloadWindow : Window
                     xml = await client.GetStringAsync("https://gms.yoyogames.com/Zeus-Runtime-LTS.rss");
                     break;
                 case 2:
+                    xml = await client.GetStringAsync("https://gms.yoyogames.com/Zeus-Runtime-LTS2026.rss");
+                    break;
+                case 3:
                     xml = await client.GetStringAsync("https://gms.yoyogames.com/Zeus-Runtime-NuBeta.rss");
                     break;
             }
             //get zeusnx feed for displaying shit
             string znxJson = await client.GetStringAsync("https://sorastream.dev/zeusnx/files.json");
+            bool priv = false;
             List<ZNXRuntimeMetadata> znxFeed = JsonConvert.DeserializeObject<List<ZNXRuntimeMetadata>>(znxJson);
 
             //isinstalled stuff
             string rp = string.Empty;
-            string lts = runtype == 1 ? (!usePD ? "lts" : "-LTS") : (!usePD ? "monthly" : string.Empty);
-
+            string runPath = string.Empty;
+            if (!usePD)
+            {
+                runPath = runtype switch
+                {
+                    0 => "monthly",
+                    1 => "lts",
+                    2 => "lts2026",
+                    3 => "beta"
+                };
+            }
+            else
+            {
+                runPath = runtype switch
+                {
+                    0 => "",
+                    1 => "-LTS",
+                    2 => "-LTS2026",
+                    3 => "-Beta"
+                };
+            }
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(xml);
             XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
@@ -129,23 +155,18 @@ public partial class DownloadWindow : Window
             {
                 //right depending on the runtime the base-module stuff doesn't exist, basically anything pre 2023.2. lts is infact, pre 2023.2.
                 string title = item["title"]?.InnerText.Replace("Version ", "");
-                //if it's below 2022, don't even bother rn.
-                if (title.Split('.')[0] == "2") continue;
                 //check if there's a znx runtime that matches
-                bool match = false;
                 string znxUrl = "";
                 foreach (var thing in znxFeed)
                 {
                     if (title == thing.DisplayVersion)
                     {
                         znxUrl = $"https://sorastream.dev/zeusnx/{thing.File}";
+                        priv = thing.Private;
                     }
                 }
-                if (znxUrl == "") continue;
-                //blacklist 2022.3 and lower since that uses an older build system, and i haven't researched how to patch that yet
-                if (Double.Parse($"{title.Split('.')[0]}.{title.Split('.')[1]}") <= 2022.4 && Double.Parse($"{title.Split('.')[0]}.{title.Split('.')[1]}") != 2022.11 && runtype == 0) continue;
                 var enclosure = item.SelectSingleNode("enclosure");
-                if (enclosure == null) continue;
+                if (znxUrl == "" || priv || enclosure == null) continue;
                 string WinBase = string.Empty, OSXx64Base = string.Empty, OSXarm64Base = string.Empty, Linuxx64Base = string.Empty, Linuxarm64Base = string.Empty;
                 if (Int32.Parse(title.Split('.')[0]) >= 2023)
                 {
@@ -167,7 +188,7 @@ public partial class DownloadWindow : Window
                     byteStream = await client.GetByteArrayAsync(item["comments"]?.InnerText ?? "");
                     File.WriteAllBytesAsync(Path.Combine(cachePath, $"release-notes-{title}.json"), byteStream);
                 }
-                string endingDir = Path.Combine($"GameMakerStudio2{lts}", "Cache", "runtimes", $"runtime-{title}");
+                string endingDir = Path.Combine($"GameMakerStudio2{runPath}", "Cache", "runtimes", $"runtime-{title}");
                 switch (MainWindow.platform)
                 {
                     case "windows":
@@ -177,12 +198,12 @@ public partial class DownloadWindow : Window
                         rp = "/" + Path.Combine("Users", "Shared", endingDir);
                         break;
                     case "linux":
-                        rp = Path.Combine("Runners", "gm" + lts, $"runtime-{title}");
+                        rp = Path.Combine("Runners", "gm" + runPath, $"runtime-{title}");
                         break;
                 }
 
                 if (!usePD)
-                    rp = Path.Combine("Runners", "gm" + lts, $"runtime-{title}");
+                    rp = Path.Combine("Runners", "gm" + runPath, $"runtime-{title}");
 
                 list.Add(new YYRuntimeMetadata
                 {
@@ -261,10 +282,13 @@ public partial class DownloadWindow : Window
                 string modURL = string.Empty;
                 bool pre20232 = false;
                 bool lts = false;
+                bool lts2026 = false;
                 if (data.WinBaseURL == "")
                     pre20232 = true;
                 if (data.Version.Contains("2022.0"))
                     lts = true;
+                if (data.Version.Contains("2026"))
+                    lts2026 = true;
                 if (lts)
                     baseName = data.BaseURL.Replace("http://", ""); //thanks lts
                 else
@@ -310,22 +334,43 @@ public partial class DownloadWindow : Window
                 ini.Load(Path.Combine("Data", "config.ini"));
 
                 bool downloadToPD = ini["Config"]["UseProgramData"].ToBool();
+                string gmName = "";
+                if (downloadToPD)
+                {
+                    gmName = "GameMakerStudio2";
+                    if (lts)
+                        gmName += "-LTS";
+                    if (lts2026)
+                        gmName += "-LTS2026";
+                }
+                else
+                {
+                    gmName = "gm";
+                    if (lts)
+                        gmName += "lts";
+                    else if (lts2026)
+                        gmName += "lts2026";
+                    else
+                        gmName += "monthly";
+                }
+
+
                 //paths!
                 switch (MainWindow.platform)
                 {
                     case "windows":
-                        installPath = Path.Combine("C:", "ProgramData", $"GameMakerStudio2{(lts ? "-LTS" : "")}", "Cache", "runtimes", "zarfa").Replace("zarfa", "");
+                        installPath = Path.Combine("C:", "ProgramData", gmName, "Cache", "runtimes", "zarfa").Replace("zarfa", "");
                         break;
                     case "osx":
-                        installPath = "/" + Path.Combine("Users", "Shared", $"GameMakerStudio2{(lts ? "-LTS" : "")}", "Cache", "runtimes", "zarfa").Replace("zarfa", "");
+                        installPath = "/" + Path.Combine("Users", "Shared", gmName, "Cache", "runtimes", "zarfa").Replace("zarfa", "");
                         break;
                     case "linux":
-                        installPath = Path.Combine("Runners", "gm" + (lts ? "lts" : "monthly"), "zarfa").Replace("zarfa", "");
+                        installPath = Path.Combine("Runners", gmName, "zarfa").Replace("zarfa", "");
                         break;
                 }
                 
                 if (!downloadToPD)
-                    installPath = Path.Combine("Runners", "gm" + (lts ? "lts" : "monthly"), "zarfa").Replace("zarfa", "");
+                    installPath = Path.Combine("Runners", gmName, "zarfa").Replace("zarfa", "");
 
                 using var client = new HttpClient();
                 if (!pre20232)
@@ -484,8 +529,11 @@ public partial class DownloadWindow : Window
                 case "LTS":
                     LoadRuntimes(1);
                     break;
-                case "Beta":
+                case "LTS2026":
                     LoadRuntimes(2);
+                    break;
+                case "Beta":
+                    LoadRuntimes(3);
                     break;
             }
         }

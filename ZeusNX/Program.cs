@@ -12,10 +12,7 @@ namespace ZeusNX
         [STAThread]
         public static void Main(string[] args)
         {
-            if (OperatingSystem.IsMacOS())
-            {
-                Directory.SetCurrentDirectory(AppContext.BaseDirectory);
-            }
+            Directory.SetCurrentDirectory(AppContext.BaseDirectory);
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
         }
 

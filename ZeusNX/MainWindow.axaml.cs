@@ -150,6 +150,7 @@ namespace ZeusNX
             Directory.CreateDirectory("Runners");
             Directory.CreateDirectory(Path.Combine("Runners", "gmmonthly"));
             Directory.CreateDirectory(Path.Combine("Runners", "gmlts"));
+            Directory.CreateDirectory(Path.Combine("Runners", "gmlts2026"));
             Directory.CreateDirectory(Path.Combine("Runners", "gmbeta"));
             Directory.CreateDirectory("Data");
             Directory.CreateDirectory(Path.Combine("Data", "Metadata"));
@@ -466,6 +467,7 @@ namespace ZeusNX
                 string endingDir = Path.Combine("Cache", "runtimes");
                 string basePath = ""; //TECHNICALLY there's no linux path.
                 string ltsPath = ""; //TECHNICALLY there's no linux path.
+                string lts2026Path = "";
                 string betaPath = ""; 
                 string devPath = "";
 
@@ -474,12 +476,14 @@ namespace ZeusNX
                     case "windows":
                         basePath = Path.Combine("C:", "ProgramData", "GameMakerStudio2", endingDir);
                         ltsPath = basePath.Replace("GameMakerStudio2", "GameMakerStudio2-LTS");
+                        lts2026Path = basePath.Replace("GameMakerStudio2", "GameMakerStudio2-LTS2026");
                         betaPath = basePath.Replace("GameMakerStudio2", "GameMakerStudio2-Beta");
                         devPath = basePath.Replace("GameMakerStudio2", "GameMakerStudio2-Dev");
                         break;
                     case "osx":
                         basePath = "/" + Path.Combine("Users", "Shared", "GameMakerStudio2", endingDir);
                         ltsPath = basePath.Replace("GameMakerStudio2", "GameMakerStudio2-LTS");
+                        lts2026Path = basePath.Replace("GameMakerStudio2", "GameMakerStudio2-LTS2026");
                         betaPath = basePath.Replace("GameMakerStudio2", "GameMakerStudio2-Beta");
                         devPath = basePath.Replace("GameMakerStudio2", "GameMakerStudio2-Dev");
                         break;
@@ -491,20 +495,27 @@ namespace ZeusNX
                 {
                     basePath = Path.Combine("Runners", "gmmonthly");
                     ltsPath = Path.Combine("Runners", "gmlts");
+                    lts2026Path = Path.Combine("Runners", "gmlts2026");
                     betaPath = Path.Combine("Runners", "gmbeta");
                 }
 
                 //mainline
                 if (Directory.Exists(basePath))
-                    runtimes.AddRange(Directory.GetDirectories(basePath).Select(Path.GetFileName).Select(name => $"{name.Replace("runtime-", "")} | Mainline").ToList());
+                    runtimes.AddRange(Directory.GetDirectories(basePath).Select(Path.GetFileName).Select(name => $"{name.Replace("runtime-", "")} | Monthly").ToList());
                 else
-                    trace("WARN", "No Mainline Runtimes Found!");
+                    trace("WARN", "No Monthly Runtimes Found!");
 
                 //LTS
                 if (Directory.Exists(ltsPath))
                     runtimes.AddRange(Directory.GetDirectories(ltsPath).Select(Path.GetFileName).Select(name => $"{name.Replace("runtime-", "")} | LTS").ToList());
                 else
                     trace("WARN", "No LTS Runtimes Found!");
+
+                //LTS 2026
+                if (Directory.Exists(lts2026Path))
+                    runtimes.AddRange(Directory.GetDirectories(lts2026Path).Select(Path.GetFileName).Select(name => $"{name.Replace("runtime-", "")} | LTS2026").ToList());
+                else
+                    trace("WARN", "No LTS2026 Runtimes Found!");
 
                 //Beta
                 if (Directory.Exists(betaPath))
@@ -608,22 +619,6 @@ namespace ZeusNX
             {
                 Dictionary<string, string> keyFile = new Dictionary<string, string>();
                 Dictionary<int, string> allKeys = new Dictionary<int, string>();
-                string[] keysToCheck = ["master_kek_source_06",
-                                        "master_kek_source_07",
-                                        "master_kek_source_08",
-                                        "master_kek_source_09",
-                                        "master_kek_source_0a",
-                                        "master_kek_source_0b",
-                                        "master_kek_source_0c",
-                                        "master_kek_source_0d",
-                                        "master_kek_source_0e",
-                                        "master_kek_source_0f",
-                                        "master_kek_source_10",
-                                        "master_kek_source_11",
-                                        "master_kek_source_12",
-                                        "master_kek_source_13",
-                                        "master_kek_source_14",
-                                        "master_kek_source_15"];
 
                 trace("DEBUG", files[0].TryGetLocalPath());
                 string[] rawFile = File.ReadAllLines(files[0].TryGetLocalPath());
@@ -636,26 +631,22 @@ namespace ZeusNX
                     track++;
                 }
 
-                for (int i = 0; i < keysToCheck.Length; i++)
+                foreach (var key in keyFile)
                 {
-                    try
+                    if (key.Key.Contains("master_kek_source"))
                     {
-                        string str = keyFile[keysToCheck[i]];
-                        if (str.EndsWith("00") || str.Length > 32)
-                            str = str.Remove(str.Length - 2);
-                        trace("DEBUG", $"Before: {keyFile[keysToCheck[i]]}");
+                        string str = key.Value;
+                        trace("DEBUG", $"Before: {key.Value}");
+                        if (key.Value.EndsWith("00") || key.Value.Length > 32)
+                            str = key.Value.Remove(key.Value.Length - 2);
                         trace("DEBUG", $"After: {str}");
-                        keyFile[keysToCheck[i]] = str;
+                        keyFile[key.Key] = str;
 
-                        trace("DEBUG", $"check {keyFile[keysToCheck[i]]}");
-                    }
-                    catch (Exception exception)
-                    {
-                        trace("DEBUG", $"Exception: {exception.Message}, probably an older keyset.");
+                        trace("DEBUG", $"check {keyFile[key.Key]}");
                     }
                 }
-                string[] finalKeys = new string[keyFile.Count];
 
+                string[] finalKeys = new string[keyFile.Count];
                 for (int i = 0; i < keyFile.Count; i++)
                 {
                     finalKeys[i] = $"{allKeys[i]} = {keyFile[allKeys[i]]}";
@@ -686,7 +677,6 @@ namespace ZeusNX
                 Version = titleversion.Text,
                 ProjectPath = projpath.Text,
                 RuntimeVerison = runtimesel.SelectedItem.ToString().Split(" | ")[0],
-                //KeysPath = keypath.Text,
                 ConfigName = projconf.Text,
                 SplashPath = splashPath,
                 ExistingOptionsCheck = existingoptionsCheck.IsChecked == true,
@@ -700,7 +690,6 @@ namespace ZeusNX
                 SameIcons = sameicoCheck.IsChecked == true,
                 EnableScreenShots = screenshotCheck.IsChecked == true,
                 EnableVideoCapture = recordCheck.IsChecked == true,
-                OfflineManualPath = "", //offlineManualPath.Text,
                 AmericanEnglish = aeCheck.IsChecked == true,
                 CanadianFrench = cfCheck.IsChecked == true,
                 LatinAmericanSpanish = saCheck.IsChecked == true,
@@ -775,7 +764,6 @@ namespace ZeusNX
                 titleid.Text = meta.TitleID;
                 titleversion.Text = meta.Version;
                 projpath.Text = meta.ProjectPath;
-                //keypath.Text = meta.KeysPath;
                 projconf.Text = meta.ConfigName;
                 preselecteduserCheck.IsChecked = meta.RequireAccount;
                 debugCheck.IsChecked = meta.DebugOutput;
@@ -787,7 +775,6 @@ namespace ZeusNX
                 sameicoCheck.IsChecked = meta.SameIcons;
                 screenshotCheck.IsChecked = meta.EnableScreenShots;
                 recordCheck.IsChecked = meta.EnableVideoCapture;
-                //offlineManualPath.Text = meta.OfflineManualPath;
 
                 //lang
                 aeCheck.IsChecked = meta.AmericanEnglish;
@@ -886,7 +873,7 @@ namespace ZeusNX
                 var titleID = titleid.Text == null ? null : titleid.Text.ToLower();
                 var titleVer = titleversion.Text == null ? "0.0.0" : titleversion.Text;
                 var projConfig = projconf.Text == null ? "Default" : projconf.Text;
-                var keyPath = "Data/prod.keys"; //this is just gonna be hardcoded here since you "install" the keys anyways. if i was smart i'd just parse the keys needed and just feed that as an argument instead of having the entire file
+                var keyPath = "Data/prod.keys"; //this is just gonna be hardcoded here since you "install" the keys anyways. if i was smart i'd just parse the keys needed and just feed that as an argument instead of having the entire file NO????????????
                 List<string> selLanguages = getSelectedLanguages();
 
                 if (!File.Exists(keyPath))
@@ -923,8 +910,9 @@ namespace ZeusNX
                 string commonPath = Path.Combine($"GameMakerStudio2{(branch == "Mainline" ? "" : $"-{branch}")}", "Cache", "runtimes", selectedRuntime);
                 string localVersion = branch switch
                 {
-                    "Mainline" => "monthly",
+                    "Monthly" => "monthly",
                     "LTS" => "lts",
+                    "LTS2026" => "lts2026",
                     "Beta" => "beta",
                     "Dev" => "dev"
                 };
@@ -968,15 +956,17 @@ namespace ZeusNX
                     temp2 = temp2.Replace("runtime-", string.Empty);
                     if (temp != temp2)
                     {
+                        var tempNum = Double.Parse(temp.Split('.')[0]);
+                        var tempNum2 = Double.Parse(temp2.Split('.')[0]);
                         if (temp == "2024.14.3" && temp2 == "2024.14.4")
                             trace("WARN", "2024.14.3 with a 2024.14.4 runtime found, this will MOST LIKELY FAIL. Update your project with the IDE!");
-                        else if (!temp2.Contains("2024") && temp.Contains("2024"))
+                        else if (tempNum2 < 2024 && tempNum >= 2024)
                         {
                             trace("ERROR", "Trying to build a 2024 project with a pre-2024 runtime will NOT work!");
                             failed = true;
                             return;
                         }
-                        else if (temp2.Contains("2024") && !temp.Contains("2024"))
+                        else if (tempNum2 >= 2024 && tempNum < 2024)
                         {
                             trace("ERROR", "Trying to build a pre-2024 project with a 2024 runtime will NOT work!");
                             failed = true;
@@ -987,7 +977,7 @@ namespace ZeusNX
                     }
 
                     //check if we need to set a prefab check or not, thanks 2024.14.
-                    if (temp2.Contains("2024.14"))
+                    if (temp2.Contains("2024.14") || temp2.Contains("2026"))
                     {
                         trace("INFO", "2024.14+ project found, enabling prefab flag...");
                         enablePrefab = true;
@@ -997,7 +987,7 @@ namespace ZeusNX
                 }
 
                 //if the project is less than 2024 we'll add a thing for options_switch.yy, options were still in the yyp until 2023.11 i think
-                if (!selectedRuntime.Contains("2024"))
+                if (!selectedRuntime.Contains("2024") || !selectedRuntime.Contains("2026"))
                 {
                     //backup original yyp
                     File.Copy(projPath, $"{projDir}{projName}.yypbck", true);
@@ -1109,7 +1099,7 @@ namespace ZeusNX
                     trace("INFO", "Creating options_switch.yy...");
                     //ok so funny thing is all fields we can modify are actually universal for both 2024 and whatever came before, iPhones are AWESOME!
                     //lowkey should refactor this to only have one, it's the exact same code for both except for class
-                    if (selectedRuntime.Contains("2024"))
+                    if (selectedRuntime.Contains("2024") || selectedRuntime.Contains("2026"))
                     {
                         //default for now, we're gonna add some stuff later for it
                         YYOptions2024 options = new YYOptions2024
@@ -1319,14 +1309,15 @@ namespace ZeusNX
 
         private async Task<int> runCompiler(string runtimePath, string projPath, string projName, string buildDir, string cacheDir, string config, bool isPreprocess)
         {
+            bool lts2026 = runtimePath.Contains("2026");
             string prefabPath = string.Empty;
             switch (platform)
             {
                 case "windows": 
-                    prefabPath = Path.Combine("C:", "ProgramData", "GameMakerStudio2", "Prefabs");
+                    prefabPath = Path.Combine("C:", "ProgramData", $"GameMakerStudio2{(lts2026 ? "-LTS2026" : "")}", "Prefabs");
                     break;
                 case "osx":
-                    prefabPath = "/" + Path.Combine("Users", "Shared", "GameMakerStudio2", "Prefabs");
+                    prefabPath = "/" + Path.Combine("Users", "Shared", $"GameMakerStudio2{(lts2026 ? "-LTS2026" : "")}", "Prefabs");
                     break;
                 case "linux":
                     prefabPath = String.Empty; //i lowkey forgot about this here uhh Oops!
@@ -1344,7 +1335,7 @@ namespace ZeusNX
 
             if (isPreprocess) args += $"/preprocess=\"{Path.Combine(buildDir, "cache")}\"";
 
-            return await runExternalTool($"{runtimePath}{Path.Combine(compilerPath, $"GMAssetCompiler{(platform == "windows" ? ".exe" : "")}")}", args, "GMAC", true, false); //atleast test
+            return await runExternalTool($"{runtimePath}{Path.Combine(compilerPath, $"GMAssetCompiler{(platform == "windows" ? ".exe" : "")}")}", args, "GMAC", true, true); //atleast test
         }
 
         private bool verifyTitleID(string titleID)

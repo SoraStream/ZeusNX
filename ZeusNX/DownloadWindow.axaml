@@ -19,6 +19,7 @@
 		<TabControl Grid.Row="0" Margin="10" SelectionChanged="GetRuntimes">
 			<TabItem Header="Monthly"/>
 			<TabItem Header="LTS"/>
+			<TabItem Header="LTS2026"/>
 		</TabControl>
 		<Grid Grid.Row="1" ColumnDefinitions="300, *" Margin="0,0,0,10">
 			<Border Grid.Column="0" BorderBrush="#333" BorderThickness="0,0,1,0">

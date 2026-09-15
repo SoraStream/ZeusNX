@@ -9,7 +9,6 @@ namespace ZeusNX.Metadata
         public string Version { get; set; }
         public string ProjectPath { get; set; }
         public string RuntimeVerison { get; set; }
-        public string KeysPath { get; set; }
         public string ConfigName { get; set; }
         public string SplashPath { get; set; }
 
@@ -24,7 +23,6 @@ namespace ZeusNX.Metadata
         public bool SameIcons { get; set; }
         public bool EnableScreenShots { get; set; }
         public bool EnableVideoCapture { get; set; }
-        public string OfflineManualPath { get; set; }
 
         //languages
         public bool AmericanEnglish { get; set; }
