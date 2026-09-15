@@ -166,7 +166,10 @@ public partial class DownloadWindow : Window
                     }
                 }
                 var enclosure = item.SelectSingleNode("enclosure");
-                if (znxUrl == "" || priv || enclosure == null) continue;
+                if (znxUrl == "" || enclosure == null) continue;
+                #if RELEASE
+                if (priv) continue;
+                #endif
                 string WinBase = string.Empty, OSXx64Base = string.Empty, OSXarm64Base = string.Empty, Linuxx64Base = string.Empty, Linuxarm64Base = string.Empty;
                 if (Int32.Parse(title.Split('.')[0]) >= 2023)
                 {

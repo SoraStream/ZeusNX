@@ -30,6 +30,8 @@ namespace ZeusNX
         public static Architecture architecture = RuntimeInformation.OSArchitecture; //also figure this out later, there will only be arm64 and x64 builds
         public bool enablePrefab = false;
         public string compilerPath = string.Empty;
+
+        public string linuxBasePath = string.Empty;
         public List<string> languages = new List<string> { "AmericanEnglish",
                                                            "CanadianFrench",
                                                            "LatinAmericanSpanish",
@@ -65,6 +67,8 @@ namespace ZeusNX
                 LoadMetadata(null, null);
             trace("INFO", $"Welcome to ZeusNX, Version {ZeusNXVersion} ({platform}, {architecture.ToString().ToLower()})");
             trace("DEBUG", $"Asset Compiler Path Is: {compilerPath}");
+            if (platform == "linux")
+                linuxBasePath = $"/{AppContext.BaseDirectory.Split('/')[1]}/{AppContext.BaseDirectory.Split('/')[2]}/";
         }
 
         //thank you https://learn.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
@@ -1320,7 +1324,7 @@ namespace ZeusNX
                     prefabPath = "/" + Path.Combine("Users", "Shared", $"GameMakerStudio2{(lts2026 ? "-LTS2026" : "")}", "Prefabs");
                     break;
                 case "linux":
-                    prefabPath = String.Empty; //i lowkey forgot about this here uhh Oops!
+                    prefabPath = linuxBasePath + Path.Combine(".local", "share", $"GameMakerStudio2{(lts2026 ? "-LTS2026" : "")}", "Prefabs"); //i lowkey forgot about this here uhh Oops!
                     break;               
             }
 
