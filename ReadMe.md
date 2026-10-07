@@ -1,4 +1,4 @@
-# ZeusBuilder
+# ZeusNX
 A simple enough tool to compile GameMaker: Studio 2 games for your Nintendo Switch!
 
 ## Currently this tool supports the current runtimes:
@@ -6,6 +6,7 @@ A simple enough tool to compile GameMaker: Studio 2 games for your Nintendo Swit
     - 2023.8.1.148
     - 2023.8.2.152
     - 2023.11.1.160
+    - 2024.14.1.253
     - 2024.14.3.260
     - 2024.14.4.268
 #### LTS
