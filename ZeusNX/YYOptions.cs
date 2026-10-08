@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System;
 
 namespace ZeusNX.YYOptions
 {
@@ -17,14 +18,12 @@ namespace ZeusNX.YYOptions
         public string option_switch_splash_screen { get; set; }
         public bool option_switch_use_splash { get; set; }
         public bool option_switch_allow_debug_output { get; set; }
-
     }
 
     internal class YYSwitchOptions2024 //everything past 2023.11, genuinely 2024.2 dropped and ts changed
     {
         [JsonProperty("$GMSwitchOptions")]
         public string GMSwitchOptions { get; } = "";
-
         [JsonProperty("%Name")]
         public string Name { get; } = "Switch";
         public string name { get; } = "Switch";
@@ -42,6 +41,5 @@ namespace ZeusNX.YYOptions
         public bool option_switch_use_splash { get; set; }
         public string resourceType { get; } = "GMSwitchOptions";
         public string resourceVersion { get; } = "2.0";
-
     }
 }
