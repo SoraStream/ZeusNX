@@ -1107,7 +1107,7 @@ namespace ZeusNX
                     if (selectedRuntime.Contains("2024") || selectedRuntime.Contains("2026"))
                     {
                         //default for now, we're gonna add some stuff later for it
-                        YYOptions2024 options = new YYOptions2024
+                        YYSwitchOptions2024 options = new YYSwitchOptions2024
                         {
                             option_switch_allow_debug_output = debugCheck.IsChecked == true ? true : false,
                             option_switch_enable_fileaccess_checking = fileaccessCheck.IsChecked == true ? true : false,
@@ -1123,7 +1123,7 @@ namespace ZeusNX
                     else
                     {
                         //add a case for yyp checking here, gonna need to be EVIL about it
-                        YYOptionsLTS options = new YYOptionsLTS
+                        YYSwitchOptionsLTS options = new YYSwitchOptionsLTS
                         {
                             option_switch_allow_debug_output = debugCheck.IsChecked == true ? true : false,
                             option_switch_enable_fileaccess_checking = fileaccessCheck.IsChecked == true ? true : false,
