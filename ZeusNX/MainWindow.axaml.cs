@@ -870,7 +870,6 @@ namespace ZeusNX
                 saveLang();
                 buildnsp.IsEnabled = false;
                 //support latest mainline release (2024.14.4.286) and latest lts (2022.0.3.99) on release, MAYBE beta for that one undertale thing. leave nocturnus alone since that's internal yoyogames shit
-                //gulp i wish i could add lts2026 support but it kinda don't work to compile
                 trace("INFO", "Build START!");
                 //start by checking if shit is filled out
                 var projPath = projpath.Text;
@@ -1058,6 +1057,8 @@ namespace ZeusNX
                     Directory.CreateDirectory(Path.Combine(buildDir, "nsp"));
                     Directory.CreateDirectory(Path.Combine(buildDir, "nsp", "exefs"));
                     Directory.CreateDirectory(Path.Combine(buildDir, "nsp", "romfs"));
+                    Directory.CreateDirectory(Path.Combine(buildDir, "nsp", "romfs", "nro"));
+                    Directory.CreateDirectory(Path.Combine(buildDir, "nsp", "romfs", ".nrr"));
                     Directory.CreateDirectory(Path.Combine(buildDir, "nsp", "control"));
                     Directory.CreateDirectory(Path.Combine(buildDir, "nsp", "logo"));
                 }
@@ -1148,7 +1149,7 @@ namespace ZeusNX
                 else
                     cacheDir = Path.Combine(buildDir, "cache");
 
-                    trace("INFO", "Preprocessing GMS2 project...");
+                trace("INFO", "Preprocessing GMS2 project...");
                 if (await runCompiler(runtimePath, projPath, projName, buildDir, cacheDir, projConfig, true) >= 2)
                 {
                     failed = true;
@@ -1163,6 +1164,29 @@ namespace ZeusNX
                     return;
                 }
                 await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+
+                //extension setup/debug extension check
+                string[] extensions = Directory.GetFiles(Path.Combine(buildDir, "nsp", "romfs"), "*.nro");
+                if (extensions.Length > 0)
+                {
+                    trace("DEBUG", "Extensions found!");
+                    string seperator = platform == "windows" ? "\\" : "/";
+                    foreach (string extension in extensions)
+                    {                      
+                        string extensionName = extension.Split(seperator)[extension.Split(seperator).Length - 1];
+                        extensionName = extensionName.Split(".")[0];
+                        trace("DEBUG", "Extension: " + extensionName);
+                        File.Move(Path.Combine(buildDir, "nsp", "romfs", extensionName + ".nro"), Path.Combine(buildDir, "nsp", "romfs", "nro", extensionName + ".nro"));
+                        //try for nrr file
+                        if (File.Exists(Path.Combine(buildDir, "nsp", "romfs", $"{extensionName}.nrr")))
+                            File.Move(Path.Combine(buildDir, "nsp", "romfs", extensionName + ".nrr"), Path.Combine(buildDir, "nsp", "romfs", ".nrr", extensionName + ".nrr"));
+                    }
+                }
+                if (debugCheck.IsChecked == true)
+                {
+                    File.Copy(Path.Combine("Runners", selectedRuntime, "lib", "YYSwitchOutputLib.nro"), Path.Combine(buildDir, "nsp", "romfs", "nro", "YYSwitchOutputLib.nro"));
+                    File.Copy(Path.Combine("Runners", selectedRuntime, "lib", "YYSwitchOutputLib.nrr"), Path.Combine(buildDir, "nsp", "romfs", ".nrr", "YYSwitchOutputLib.nrr"));
+                }
 
                 //now starts the fun part, copy over selected icon
                 trace("INFO", "Copying over icon(s)...");
