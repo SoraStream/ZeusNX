@@ -1,4 +1,6 @@
-![Banner](https://raw.githubusercontent.com/SoraStream/ZeusNX/main/repobanner.png)
+<p align="center">
+  <img width="512" height="128" src="https://raw.githubusercontent.com/SoraStream/ZeusNX/main/repobanner.png">
+</p>
 
 A simple tool that lets you take your GameMaker projects and build them for the Nintendo Switch!
 
