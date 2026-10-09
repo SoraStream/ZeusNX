@@ -3,18 +3,21 @@ using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Mono.Cecil;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
-using Mono.Cecil;
 using ZeusNX.Ini;
 using ZeusNX.Metadata;
 using ZeusNX.NMeta;
@@ -24,7 +27,7 @@ namespace ZeusNX
 {
     public partial class MainWindow : Window
     {
-        private string ZeusNXVersion = "1.0.1β2";
+        private string ZeusNXVersion = "1.0.1β3";
         private int langIndex = 0;
         public static string platform = "windows";
         public static Architecture architecture = RuntimeInformation.OSArchitecture; //also figure this out later, there will only be arm64 and x64 builds
@@ -54,10 +57,13 @@ namespace ZeusNX
         public Dictionary<string, string> icoPaths = new Dictionary<string, string>();
         public Dictionary<string, string> titleNames = new Dictionary<string, string>();
         public Dictionary<string, string> titleAuthors = new Dictionary<string, string>();
+        private readonly BlockingCollection<string> logQueue = new BlockingCollection<string>();
+        private readonly CancellationTokenSource logCts = new CancellationTokenSource();
 
         public MainWindow()
         {
             InitializeComponent();
+            Task.Run(ProcessLogQueue);
             InitDict();
             initConfig();
             loadConfig();
@@ -69,6 +75,12 @@ namespace ZeusNX
             trace("DEBUG", $"Asset Compiler Path Is: {compilerPath}");
             if (platform == "linux")
                 linuxBasePath = $"/{AppContext.BaseDirectory.Split('/')[1]}/{AppContext.BaseDirectory.Split('/')[2]}/";
+        }
+        protected override void OnClosed(EventArgs e)
+        {
+            logCts.Cancel();
+            logQueue.Dispose();
+            base.OnClosed(e);
         }
 
         //thank you https://learn.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
@@ -110,18 +122,51 @@ namespace ZeusNX
 #if RELEASE
             if (type == "DEBUG") return;
 #endif
+            logQueue.Add($"[{type}]: {message}\n");
+            //try
+            //{
+            //    logbox.Text += $"[{type}]: {message}\n";
+            //    logbox.CaretIndex = logbox.Text.Length;
+            //    logbox.SelectionStart = logbox.Text.Length;
+            //    logbox.SelectionEnd = logbox.Text.Length;
+            //}
+            //catch (Exception ex)
+            //{
+            //    Console.WriteLine($"Failed to update logbox: {ex.Message}");
+            //}
+
+        }
+        private async Task ProcessLogQueue()
+        {
+            var stringBuilder = new StringBuilder();
+
             try
             {
-                logbox.Text += $"[{type}]: {message}\n";
-                logbox.CaretIndex = logbox.Text.Length;
-                logbox.SelectionStart = logbox.Text.Length;
-                logbox.SelectionEnd = logbox.Text.Length;
+                foreach (var logEntry in logQueue.GetConsumingEnumerable(logCts.Token))
+                {
+                    stringBuilder.Append(logEntry);
+                    while (logQueue.TryTake(out var extraLog))
+                        stringBuilder.Append(extraLog);
+                    string chunkToLog = stringBuilder.ToString();
+                    stringBuilder.Clear();
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        try
+                        {
+                            logbox.Text += chunkToLog;
+                            logbox.CaretIndex = logbox.Text.Length;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Failed to update logbox: {ex.Message}");
+                        }
+                    }, DispatcherPriority.Background);
+                    await Task.Delay(10, logCts.Token);
+                }
             }
-            catch (Exception ex)
+            catch (OperationCanceledException)
             {
-                Console.WriteLine($"Failed to update logbox: {ex.Message}");
             }
-
         }
 
         private void PopulateMetadata()
@@ -1027,12 +1072,6 @@ namespace ZeusNX
                 }
                 File.Copy($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}", $"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}");
                 File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}");
-                //if (await runExternalTool("Tools\\xdelta.exe", $"-d -s \"{runtimePath}{compilerPath}\\GMAssetCompiler.bak\" \"Runners\\{selectedRuntime}\\{selectedRuntime}.xdelta\" \"{runtimePath}{compilerPath}\\GMAssetCompiler.dll\"", "XDELTA") != 0)
-                //{
-                //    failed = true;
-                //    return;
-                //}
-                //new and improved!
                 var writerparams = new WriterParameters { DeterministicMvid = true, SymbolWriterProvider = null, };
                 var assetcompiler = AssemblyDefinition.ReadAssembly($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}", new ReaderParameters { ReadWrite = true });
                 YYPatch.PatchAssetCompiler(assetcompiler);
@@ -1042,12 +1081,6 @@ namespace ZeusNX
 
                 //make temp directories and everything
                 trace("INFO", "Creating build dir...");
-                /*var time = DateTime.Now.ToString();
-                time = time.Replace(" ", "");
-                time = time.Replace(":", ".");
-                time = time.Replace("-", ".");
-                time = time.Replace("/", ".");
-                time = time.Replace("\\", ".");*/
                 var buildDir = $"{projName}_build{DateTime.Now:yyyyMMdd_HHmmss}";
                 if (!Directory.Exists(buildDir) || !Directory.EnumerateFileSystemEntries(buildDir).Any())
                 {
@@ -1253,7 +1286,7 @@ namespace ZeusNX
                 //if (offlineManualPath.Text != null && offlineManualPath.Text != string.Empty)
                 //    hpArgs += $" --htmldocdir \"{offlineManualPath.Text}\"";
                 hpArgs += $" --titleid \"{titleID}\"";
-                if (await runExternalTool(Path.Combine("Tools", platform, $"hacbrewpack{(platform == "windows" ? ".exe" : "")}"), hpArgs, "HBP", false, true) != 0)
+                if (await runExternalTool(Path.Combine("Tools", platform, $"hacbrewpack{(platform == "windows" ? ".exe" : "")}"), hpArgs, "HBP", true, true) != 0)
                 {
                     failed = true;
                     return;
@@ -1320,9 +1353,9 @@ namespace ZeusNX
                 };
                 using var process = new Process { StartInfo = psi };
                 if (outputLog)
-                    process.OutputDataReceived += (s, e) => { if (e.Data != null) Dispatcher.UIThread.InvokeAsync(() => trace(prefix, e.Data)); };
+                    process.OutputDataReceived += (s, e) => { if (e.Data != null) trace(prefix, e.Data); };
                 if (outputError)
-                    process.ErrorDataReceived += (s, e) => { if (e.Data != null) Dispatcher.UIThread.InvokeAsync(() => trace($"{prefix}ERR", e.Data)); };
+                    process.ErrorDataReceived += (s, e) => { if (e.Data != null) trace($"{prefix}ERR", e.Data); };
 
                 process.Start();
                 process.BeginOutputReadLine();
