@@ -4,6 +4,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Mono.Cecil;
+using Mono.CompilerServices.SymbolWriter;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -186,7 +187,7 @@ namespace ZeusNX
             switch (platform)
             {
                 case "windows":
-                    compilerPath = Path.Combine("bin", "assetcompiler", "windows", "x64");
+                    compilerPath = Path.Combine("bin", "assetcompiler", "windows", architecture.ToString().ToLower());
                     break;
                 case "osx":
                     compilerPath = Path.Combine("bin", "assetcompiler", "osx", architecture.ToString().ToLower());
@@ -912,6 +913,8 @@ namespace ZeusNX
             try
             {
                 var stopwatch = Stopwatch.StartNew();
+                bool pre2022 = false;
+                string compilerPathBck = compilerPath;
                 saveLang();
                 buildnsp.IsEnabled = false;
                 //support latest mainline release (2024.14.4.286) and latest lts (2022.0.3.99) on release, MAYBE beta for that one undertale thing. leave nocturnus alone since that's internal yoyogames shit
@@ -1020,8 +1023,15 @@ namespace ZeusNX
                             failed = true;
                             return;
                         }
-                        else
-                            trace("WARN", "Project versions don't match, there may be dragons!");
+
+                        //check for pre 2022.5 stuff
+                        if (tempNum < 2022.5 || tempNum != 2022.11)
+                        {
+                            pre2022 = true;
+
+                            compilerPath = "bin";
+                        }
+                            
                     }
 
                     //check if we need to set a prefab check or not, thanks 2024.14.
@@ -1062,22 +1072,25 @@ namespace ZeusNX
                     }
                 }
 
-                //patch GMAssetCompiler.dll to ignore licence checks
-                trace("INFO", "Patching GMAssetCompiler.dll...");
-                if (File.Exists($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}"))
+                if (!pre2022) //it's kinda lowkey not a dll in these versions
                 {
+                    //patch GMAssetCompiler.dll to ignore licence checks
+                    trace("INFO", "Patching GMAssetCompiler.dll...");
+                    if (File.Exists($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}"))
+                    {
+                        File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}");
+                        File.Copy($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}", $"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}");
+                        File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}");
+                    }
+                    File.Copy($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}", $"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}");
                     File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}");
-                    File.Copy($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}", $"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}");
-                    File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}");
+                    var writerparams = new WriterParameters { DeterministicMvid = true, SymbolWriterProvider = null, };
+                    var assetcompiler = AssemblyDefinition.ReadAssembly($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}", new ReaderParameters { ReadWrite = true });
+                    YYPatch.PatchAssetCompiler(assetcompiler);
+                    assetcompiler.Write($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}", writerparams); //:pray:
+                    assetcompiler.Dispose();
+                    await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
                 }
-                File.Copy($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}", $"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}");
-                File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}");
-                var writerparams = new WriterParameters { DeterministicMvid = true, SymbolWriterProvider = null, };
-                var assetcompiler = AssemblyDefinition.ReadAssembly($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}", new ReaderParameters { ReadWrite = true });
-                YYPatch.PatchAssetCompiler(assetcompiler);
-                assetcompiler.Write($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}", writerparams); //:pray:
-                assetcompiler.Dispose();
-                await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
 
                 //make temp directories and everything
                 trace("INFO", "Creating build dir...");
@@ -1293,11 +1306,18 @@ namespace ZeusNX
                 }
                 await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
 
-                //cleanup
-                trace("INFO", "Restoring GMAssetCompiler.dll");
-                File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}");
-                File.Copy($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}", $"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}");
-                File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}");
+                //cleanup              
+                if (!pre2022)
+                {
+                    trace("INFO", "Restoring GMAssetCompiler.dll");
+                    File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}");
+                    File.Copy($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}", $"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}");
+                    File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}");
+                }
+                else
+                {
+                    compilerPath = compilerPathBck;
+                }
                 trace("INFO", "Deleting all temp files...");
                 if (Directory.Exists(Path.Combine(buildDir, "tmp")))
                     Directory.Delete(Path.Combine(buildDir, "tmp"), true);

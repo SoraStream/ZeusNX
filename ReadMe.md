@@ -7,7 +7,7 @@ A simple tool that lets you take your GameMaker projects and build them for the 
 If you have any problems or issues with the app, you can talk/ask about it here! https://discord.gg/JvK4CdXh4q
 
 ## What's planned?
-The general plan for now is to support every runtime from 2022.5 to latest, including LTS in the mix. I do want to support 2022.3 through 2.1.6, but i need to read up on how the asset compiler works for these runtimes.
+The general plan for now is to support every runtime from 2.0.6 to latest, including LTS and LTS2026 in the mix. 2.0.6 - 2022.3 however will only be avaliable/work on Windows unfortunetly.
 
 Unfortunetly, runtimes 2.3.4.443, 2022.11.1.75 and 2024.6.1.208 will never be supported unless a retail switch game uses it, since yyg/opera removed the switch module from their servers. If you happen to have it, please let me know!
 
@@ -29,7 +29,7 @@ Unfortunetly, runtimes 2.3.4.443, 2022.11.1.75 and 2024.6.1.208 will never be su
 - hptnacp
 
 ## Credits
-- nik
+- nik - for creating RussellNX (which is the main inspiration for this)
 - The-4n - for hacBrewPack and hptnacp
 - Enichan - for the INI library i use
 - Ralcactus - for testing the tool before release!
