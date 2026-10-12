@@ -4,7 +4,6 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Mono.Cecil;
-using Mono.CompilerServices.SymbolWriter;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -769,7 +768,7 @@ namespace ZeusNX
 
             //if (file != null)
             //{
-            string json = JsonConvert.SerializeObject(meta, Formatting.Indented);
+            string json = JsonConvert.SerializeObject(meta, Newtonsoft.Json.Formatting.Indented);
             string filePath = Path.Combine("Data", "Metadata", $"{Path.GetFileNameWithoutExtension(meta.ProjectPath)}.znx");
             try
             {            
@@ -1062,7 +1061,7 @@ namespace ZeusNX
                             {"name", "Switch"},
                             {"path", "options/switch/options_switch.yy"}
                         });
-                            File.WriteAllText(projPath, jYYP.ToString(Formatting.Indented));
+                            File.WriteAllText(projPath, jYYP.ToString(Newtonsoft.Json.Formatting.Indented));
                         }
                         else
                         {
@@ -1090,6 +1089,25 @@ namespace ZeusNX
                     assetcompiler.Write($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.dll")}", writerparams); //:pray:
                     assetcompiler.Dispose();
                     await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+                }
+                else
+                {
+                    //THAT'S RIGHT. XDELTA IS BACK ON THE MENU.
+                    trace("INFO", "Patching GMAssetCompiler.exe...");
+                    if (File.Exists($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}"))
+                    {
+                        File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.exe")}");
+                        File.Copy($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}", $"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.exe")}");
+                        File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}");
+                    }
+                    File.Copy($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.exe")}", $"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}");
+                    File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.exe")}");
+                    string xArgs = $"-d -s {runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")} {Path.Combine("Runners", selectedRuntime, $"{selectedRuntime}.xdelta")} {runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.exe")}";
+                    if (await runExternalTool(Path.Combine("Tools", platform, $"xdelta{(platform == "windows" ? ".exe" : "")}"), xArgs, "XDELTA", true, true) != 0)
+                    {
+                        failed = true;
+                        return;
+                    }
                 }
 
                 //make temp directories and everything
@@ -1164,7 +1182,7 @@ namespace ZeusNX
                             option_switch_texture_page = texturesizesel.SelectedItem as string, //there's only 7 options i'll deal with that in the project settings tab
                             option_switch_use_splash = splashCheck.IsChecked == true ? true : false //i s'pose
                         };
-                        File.WriteAllText(Path.Combine(projDir, "options", "switch", "options_switch.yy"), JsonConvert.SerializeObject(options, Formatting.Indented));
+                        File.WriteAllText(Path.Combine(projDir, "options", "switch", "options_switch.yy"), JsonConvert.SerializeObject(options, Newtonsoft.Json.Formatting.Indented));
                     }
                     else
                     {
@@ -1180,7 +1198,7 @@ namespace ZeusNX
                             option_switch_texture_page = texturesizesel.SelectedItem as string, //there's only 7 options i'll deal with that in the project settings tab
                             option_switch_use_splash = splashCheck.IsChecked == true ? true : false //i s'pose
                         };
-                        File.WriteAllText(Path.Combine(projDir, "options", "switch", "options_switch.yy"), JsonConvert.SerializeObject(options, Formatting.Indented));
+                        File.WriteAllText(Path.Combine(projDir, "options", "switch", "options_switch.yy"), JsonConvert.SerializeObject(options, Newtonsoft.Json.Formatting.Indented));
                     }
                 }
 
@@ -1316,6 +1334,10 @@ namespace ZeusNX
                 }
                 else
                 {
+                    trace("INFO", "Restoring GMAssetCompiler.exe");
+                    File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.exe")}");
+                    File.Copy($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}", $"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.exe")}");
+                    File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}");
                     compilerPath = compilerPathBck;
                 }
                 trace("INFO", "Deleting all temp files...");
