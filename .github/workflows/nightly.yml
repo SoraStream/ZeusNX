@@ -1,0 +1,45 @@
+name: Build Nightly
+
+on:
+  push:
+    branches: "main"
+  pull_request:
+    branches: "main"
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x' # Change this to match your target .NET version (e.g., 6.0, 7.0, 8.0, 9.0)
+
+      - name: Restore Dependencies
+        run: dotnet restore ZeusNX.sln
+
+      - name: Build Project
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Publish Application
+        run: dotnet publish ZeusNX/ZeusNX.csproj -c Release -o ./publish-output
+        
+      - name: Get Short Commit Hash
+        id: vars
+        shell: bash
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZeusNX-nightly(${{steps.vars.outputs.sha_short}})-${{ matrix.os }}
+          path: ./publish-output/
