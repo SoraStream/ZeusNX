@@ -33,7 +33,7 @@ namespace ZeusNX
         public static Architecture architecture = RuntimeInformation.OSArchitecture; //also figure this out later, there will only be arm64 and x64 builds
         public bool enablePrefab = false;
         public string compilerPath = string.Empty;
-
+        public string toolPath = string.Empty;
         public string linuxBasePath = string.Empty;
         public List<string> languages = new List<string> { "AmericanEnglish",
                                                            "CanadianFrench",
@@ -182,19 +182,9 @@ namespace ZeusNX
                 platform = "osx";
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 platform = "linux";
-            
-            switch (platform)
-            {
-                case "windows":
-                    compilerPath = Path.Combine("bin", "assetcompiler", "windows", architecture.ToString().ToLower());
-                    break;
-                case "osx":
-                    compilerPath = Path.Combine("bin", "assetcompiler", "osx", architecture.ToString().ToLower());
-                    break;
-                case "linux":
-                    compilerPath = Path.Combine("bin", "assetcompiler", "linux", architecture.ToString().ToLower());
-                    break;
-            }
+
+            compilerPath = Path.Combine("bin", "assetcompiler", platform, architecture.ToString().ToLower());
+            toolPath = Path.Combine("Tools", platform, architecture.ToString().ToLower());
             
             Directory.CreateDirectory("Runners");
             Directory.CreateDirectory(Path.Combine("Runners", "gmmonthly"));
@@ -1103,7 +1093,7 @@ namespace ZeusNX
                     File.Copy($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.exe")}", $"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")}");
                     File.Delete($"{runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.exe")}");
                     string xArgs = $"-d -s {runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.bak")} {Path.Combine("Runners", selectedRuntime, $"{selectedRuntime}.xdelta")} {runtimePath}{Path.Combine(compilerPath, "GMAssetCompiler.exe")}";
-                    if (await runExternalTool(Path.Combine("Tools", platform, $"xdelta{(platform == "windows" ? ".exe" : "")}"), xArgs, "XDELTA", true, true) != 0)
+                    if (await runExternalTool(Path.Combine(toolPath, $"xdelta{(platform == "windows" ? ".exe" : "")}"), xArgs, "XDELTA", true, true) != 0)
                     {
                         failed = true;
                         return;
@@ -1304,7 +1294,7 @@ namespace ZeusNX
                     serializer.Serialize(fs, nacpXML);
 
                 string hptnacpArgs = $"-i \"{Path.Combine(buildDir, "tmp", "control.xml")}\" -o \"{Path.Combine(buildDir, "nsp", "control", "control.nacp")}\" -a createnacp";
-                if (await runExternalTool(Path.Combine("Tools", platform, $"hptnacp{(platform == "windows" ? ".exe" : "")}"), hptnacpArgs, "HPTNACP", true, true) != 0)
+                if (await runExternalTool(Path.Combine(toolPath, $"hptnacp{(platform == "windows" ? ".exe" : "")}"), hptnacpArgs, "HPTNACP", true, true) != 0)
                 {
                     failed = true;
                     return;
@@ -1317,7 +1307,7 @@ namespace ZeusNX
                 //if (offlineManualPath.Text != null && offlineManualPath.Text != string.Empty)
                 //    hpArgs += $" --htmldocdir \"{offlineManualPath.Text}\"";
                 hpArgs += $" --titleid \"{titleID}\"";
-                if (await runExternalTool(Path.Combine("Tools", platform, $"hacbrewpack{(platform == "windows" ? ".exe" : "")}"), hpArgs, "HBP", true, true) != 0)
+                if (await runExternalTool(Path.Combine(toolPath, $"hacbrewpack{(platform == "windows" ? ".exe" : "")}"), hpArgs, "HBP", true, true) != 0)
                 {
                     failed = true;
                     return;
